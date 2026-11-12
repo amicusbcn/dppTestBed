@@ -1,0 +1,95 @@
+{
+  "gs1_digital_link": "https://dpp.baidata.eu/01/08412345678905/21/BAT-2026-8841",
+  "battery_id": "BAT-2026-8841",
+  "status": "Activa · Primera Vida",
+  "submodels": {
+    "public_nameplate": {
+      "aas_submodel_id": "urn:baidata:aas:submodel:nameplate:BAT-2026-8841",
+      "source_node": "Nodo EDC Fabricante OEM (IberiaVolt Mobility)",
+      "product_name": "Batería Modular e-Bike E-625",
+      "manufacturer": "IberiaVolt Mobility S.L.",
+      "manufacturing_plant": "Bilbao, Bizkaia (España)",
+      "manufacturing_date": "2026-04-18",
+      "battery_category": "Movilidad Ligera (LMT)",
+      "chemistry": "NMC 811 (Litio-Níquel-Manganeso-Cobalto)",
+      "nominal_capacity_wh": 625,
+      "nominal_voltage_v": 36,
+      "weight_kg": 3.4
+    },
+    "carbon_circularity": {
+      "aas_submodel_id": "urn:baidata:aas:submodel:carbon:BAT-2026-8841",
+      "source_node": "Nodo EDC Fabricante de Celdas (EuroCell)",
+      "carbon_footprint_kg_kwh": 45.2,
+      "performance_class": "Clase B · Bajo impacto",
+      "lifecycle_breakdown": [
+        { "stage": "Extracción y refinado", "share": 42 },
+        { "stage": "Fabricación de celda", "share": 38 },
+        { "stage": "Ensamblaje y transporte", "share": 20 }
+      ],
+      "recycled_content": [
+        { "material": "Cobalto reciclado", "actual": 16, "target_2031": 16 },
+        { "material": "Litio reciclado", "actual": 6, "target_2031": 6 },
+        { "material": "Níquel reciclado", "actual": 8, "target_2031": 6 }
+      ],
+      "end_of_life_info": "Entregar exclusivamente en puntos de recogida autorizados o red de distribuidores oficiales. No desechar en residuos urbanos."
+    },
+    "dynamic_bms": {
+      "aas_submodel_id": "urn:baidata:aas:submodel:bms-dynamic:BAT-2026-8841",
+      "source_node": "Pasarela BMS / Sincronización App Propietario",
+      "last_sync": "Hace 2 días (vía Bluetooth App · Sin SIM permanente)",
+      "state_of_health_soh": 91.5,
+      "charge_cycles": 248,
+      "remaining_capacity_wh": 572,
+      "operating_temp_range": "-10 °C a 45 °C",
+      "extreme_events": [
+        {
+          "date": "2026-08-14",
+          "event": "Temperatura elevada en carga rápida (46,2 °C)",
+          "impact": "Sin degradación crítica registrada"
+        }
+      ]
+    },
+    "workshop_repair": {
+      "aas_submodel_id": "urn:baidata:aas:submodel:repair:BAT-2026-8841",
+      "source_node": "Nodo EDC OEM + Nodo EDC Red Talleres",
+      "cell_architecture": "10S4P (40 celdas cilíndricas 21700)",
+      "disassembly_manual": "MANUAL-DESPIECE-E625-REV4.pdf",
+      "spare_parts": [
+        "Placa electrónica BMS v2.4 (Ref. IV-BMS-09)",
+        "Junta estanqueidad IP67 (Ref. IV-SEAL-02)",
+        "Conector descarga Rosenberger (Ref. IV-CON-11)"
+      ],
+      "service_log": [
+        {
+          "date": "2026-09-02",
+          "operator": "Taller Certificado E-Mobility Bilbao (DID:web:emobility-bilbao.es)",
+          "action": "Sustitución de conector principal y recalibración de celdas"
+        }
+      ]
+    },
+    "recycler_chemistry": {
+      "aas_submodel_id": "urn:baidata:aas:submodel:chemistry-confidential:BAT-2026-8841",
+      "source_node": "Nodo EDC Fabricante de Celdas (Acceso Restringido)",
+      "cathode": "LiNi0.8Mn0.1Co0.1O2 (82% peso activo)",
+      "anode": "Grafito sintético + 5% Silicio",
+      "electrolyte": "LiPF6 en mezcla EC/DMC (Inflamable · Cat. 2)",
+      "hazardous_substances": [
+        "Hexafluorofosfato de litio (CAS 21324-40-3)",
+        "Carbonato de etileno (CAS 96-49-1)"
+      ],
+      "safety_neutralization": "Descargar por debajo del 10% SoC antes de apertura mecánica de carcasa."
+    },
+    "regulatory_compliance": {
+      "aas_submodel_id": "urn:baidata:aas:submodel:compliance:BAT-2026-8841",
+      "source_node": "Nodo EDC OEM + Organismo Notificado (eIDAS)",
+      "eu_declaration_id": "DoC-UE-2026-8841-VALID",
+      "notified_body": "TÜV Rheinland LGA Products GmbH (NB 0197)",
+      "audit_date": "2026-03-29",
+      "standards_applied": [
+        "Reglamento (UE) 2023/1542",
+        "EN 18221 / EN 18222 (Arquitectura DPP)",
+        "IDTA-02006 (Battery Pass Submodel)"
+      ]
+    }
+  }
+}
