@@ -464,7 +464,7 @@ export default function App() {
                     >
                       {part}
                     </span>
-                  );
+                  ))}
                 </div>
               </div>
               
