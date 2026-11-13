@@ -61,6 +61,27 @@ export default function App() {
     regulatory_compliance: compliance,
   } = dppData.submodels;
 
+  const {
+    public_nameplate: fbNameplate,
+    performance_durability: fbPerformance,
+    carbon_circularity: fbCarbon,
+    supply_chain_due_diligence: fbDueDiligence,
+    dynamic_bms: fbBms,
+    workshop_repair: fbRepair,
+    recycler_chemistry: fbChemistry,
+    regulatory_compliance: fbCompliance,
+  } = fallbackDppData.submodels;
+
+  // Lógica visual para resaltar qué viene del AAS y qué está hardcodeado
+  const hl = (currentValue, fallbackValue, suffix = "") => {
+    const isFromAAS = aasSource === "basyx" && JSON.stringify(currentValue) !== JSON.stringify(fallbackValue);
+    return (
+      <span className={isFromAAS ? "" : "text-rose-500 font-bold border-b border-dotted border-rose-300"}>
+        {currentValue}{suffix}
+      </span>
+    );
+  };
+
   const liveScanUrl =
     typeof window !== "undefined" ? window.location.href : dppData.gs1_digital_link;
 
@@ -112,7 +133,17 @@ export default function App() {
       />
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
-        {/* Banner contextual solo si hay una credencial verificada */}
+        
+        {/* LEYENDA VISUAL */}
+        <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center justify-center gap-5 text-xs">
+          <span className="flex items-center gap-1.5 text-slate-700 font-medium">
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-700"></span> Datos en vivo (AAS)
+          </span>
+          <span className="flex items-center gap-1.5 text-rose-500 font-bold">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Hardcodeado (JSON local)
+          </span>
+        </div>
+
         {activeCredential && (
           <div className="p-4 rounded-2xl bg-emerald-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
             <div className="flex items-start sm:items-center gap-3">
@@ -150,7 +181,7 @@ export default function App() {
                     : dppData.status}
                 </span>
                 <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md">
-                  ID: {dppData.battery_id}
+                  ID: {hl(dppData.battery_id, fallbackDppData.battery_id)}
                 </span>
                 <span
                   className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
@@ -174,17 +205,16 @@ export default function App() {
 
               <div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-                  {nameplate.product_name}
+                  {hl(nameplate.product_name, fbNameplate.product_name)}
                 </h1>
                 <p className="text-sm text-slate-600 mt-1 flex items-center gap-1.5">
                   <Factory className="w-4 h-4 text-slate-400 shrink-0" />
                   <span>
-                    {nameplate.manufacturer} · {nameplate.manufacturing_plant}
+                    {hl(nameplate.manufacturer, fbNameplate.manufacturer)} · {hl(nameplate.manufacturing_plant, fbNameplate.manufacturing_plant)}
                   </span>
                 </p>
               </div>
 
-              {/* Operador Económico Responsable (cambia en Segunda Vida) */}
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs flex items-start gap-2.5">
                 <Building2 className="w-4 h-4 text-baidata-purple shrink-0 mt-0.5" />
                 <div className="min-w-0">
@@ -192,17 +222,16 @@ export default function App() {
                     Operador Económico Responsable del DPP
                   </p>
                   <p className="font-bold text-slate-900 mt-0.5">
-                    {currentOperator.name}{" "}
+                    {hl(currentOperator.name, fallbackDppData.responsible_operator.name)}{" "}
                     <span className="font-mono font-normal text-slate-500">
-                      ({currentOperator.eori_vat})
+                      ({hl(currentOperator.eori_vat, fallbackDppData.responsible_operator.eori_vat)})
                     </span>
                   </p>
-                  <p className="text-slate-600">{currentOperator.role}</p>
+                  <p className="text-slate-600">{hl(currentOperator.role, fallbackDppData.responsible_operator.role)}</p>
                 </div>
               </div>
             </div>
 
-            {/* QR Real Escaneable */}
             <div className="flex sm:flex-col items-center justify-between sm:justify-center gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 shrink-0">
               <div className="p-2 bg-white rounded-xl border border-slate-200 shadow-xs">
                 <QRCodeSVG value={liveScanUrl} size={96} level="M" />
@@ -230,10 +259,10 @@ export default function App() {
                 Capacidad Nominal
               </p>
               <p className="text-xl font-extrabold text-slate-900 mt-1">
-                {nameplate.nominal_capacity_wh} Wh
+                {hl(nameplate.nominal_capacity_wh, fbNameplate.nominal_capacity_wh, " Wh")}
               </p>
               <p className="text-xs text-slate-600 mt-0.5">
-                {nameplate.rated_capacity_ah} Ah · {nameplate.nominal_voltage_v}V
+                {hl(nameplate.rated_capacity_ah, fbNameplate.rated_capacity_ah, " Ah")} · {hl(nameplate.nominal_voltage_v, fbNameplate.nominal_voltage_v, "V")}
               </p>
             </div>
 
@@ -242,7 +271,7 @@ export default function App() {
                 Química de celda
               </p>
               <p className="text-sm font-bold text-slate-900 mt-1">
-                {nameplate.chemistry}
+                {hl(nameplate.chemistry, fbNameplate.chemistry)}
               </p>
             </div>
 
@@ -251,7 +280,7 @@ export default function App() {
                 Fabricación y Masa
               </p>
               <p className="text-sm font-bold text-slate-900 mt-1">
-                {nameplate.manufacturing_date} · {nameplate.weight_kg} kg
+                {hl(nameplate.manufacturing_date, fbNameplate.manufacturing_date)} · {hl(nameplate.weight_kg, fbNameplate.weight_kg, " kg")}
               </p>
             </div>
 
@@ -262,22 +291,21 @@ export default function App() {
               <p className="text-sm font-bold text-slate-900 mt-1">
                 {isRepurposed
                   ? "Almacenamiento Estacionario (SB)"
-                  : nameplate.battery_category}
+                  : hl(nameplate.battery_category, fbNameplate.battery_category)}
               </p>
             </div>
           </div>
 
-          {/* Seguridad de Emergencia y Etiquetado Obligatorio */}
           <div className="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div className="flex items-start gap-2 text-amber-950">
               <Flame className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold">Agentes extintores homologados: </span>
-                <span>{nameplate.extinguishing_agents.join(" · ")}</span>
+                <span>{hl(nameplate.extinguishing_agents.join(" · "), fbNameplate.extinguishing_agents.join(" · "))}</span>
               </div>
             </div>
             <span className="text-[11px] font-medium text-slate-600 shrink-0">
-              {nameplate.heavy_metals_declaration}
+              {hl(nameplate.heavy_metals_declaration, fbNameplate.heavy_metals_declaration)}
             </span>
           </div>
         </section>
@@ -294,7 +322,7 @@ export default function App() {
                   <h2 className="text-base font-bold text-slate-900">
                     Estado de Salud y Telemetría Dinámica BMS
                   </h2>
-                  <p className="text-xs text-slate-500">{bms.last_sync}</p>
+                  <p className="text-xs text-slate-500">{hl(bms.last_sync, fbBms.last_sync)}</p>
                 </div>
               </div>
               <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-baidata-lavenderSoft text-baidata-purple">
@@ -308,10 +336,10 @@ export default function App() {
                   Estado de Salud (SoH)
                 </p>
                 <p className="text-2xl font-extrabold text-emerald-900 mt-1">
-                  {bms.state_of_health_soh}%
+                  {hl(bms.state_of_health_soh, fbBms.state_of_health_soh, "%")}
                 </p>
                 <p className="text-[11px] text-emerald-700 mt-0.5">
-                  Capacidad útil: {bms.remaining_capacity_wh} Wh
+                  Capacidad útil: {hl(bms.remaining_capacity_wh, fbBms.remaining_capacity_wh, " Wh")}
                 </p>
               </div>
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
@@ -319,22 +347,22 @@ export default function App() {
                   Ciclos y Resistencia Actual
                 </p>
                 <p className="text-2xl font-extrabold text-slate-900 mt-1">
-                  {bms.charge_cycles}{" "}
+                  {hl(bms.charge_cycles, fbBms.charge_cycles)}{" "}
                   <span className="text-xs font-normal text-slate-500">ciclos</span>
                 </p>
                 <p className="text-[11px] text-slate-600 mt-0.5">
                   Resistencia interna BMS:{" "}
-                  <strong>{performance.internal_resistance_current_mohm} mΩ</strong>{" "}
-                  (Inicial: {performance.internal_resistance_initial_mohm} mΩ)
+                  <strong>{hl(performance.internal_resistance_current_mohm, fbPerformance.internal_resistance_current_mohm, " mΩ")}</strong>{" "}
+                  (Inicial: {hl(performance.internal_resistance_initial_mohm, fbPerformance.internal_resistance_initial_mohm, " mΩ")})
                 </p>
               </div>
               <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200">
                 <p className="text-xs font-medium text-amber-800">Eventos térmicos</p>
                 <p className="text-sm font-bold text-amber-950 mt-1">
-                  {bms.extreme_events[0].event}
+                  {hl(bms.extreme_events[0].event, fbBms.extreme_events[0].event)}
                 </p>
                 <p className="text-[11px] text-amber-700 mt-0.5">
-                  {bms.extreme_events[0].date} · {bms.extreme_events[0].impact}
+                  {hl(bms.extreme_events[0].date, fbBms.extreme_events[0].date)} · {hl(bms.extreme_events[0].impact, fbBms.extreme_events[0].impact)}
                 </p>
               </div>
             </div>
@@ -354,8 +382,8 @@ export default function App() {
                     Reparación, Despiece y Reacondicionamiento (Segunda Vida)
                   </h2>
                   <p className="text-xs text-slate-500">
-                    Arquitectura: {repair.cell_architecture} · Manual:{" "}
-                    <span className="font-mono">{repair.disassembly_manual}</span>
+                    Arquitectura: {hl(repair.cell_architecture, fbRepair.cell_architecture)} · Manual:{" "}
+                    <span className="font-mono">{hl(repair.disassembly_manual, fbRepair.disassembly_manual)}</span>
                   </p>
                 </div>
               </div>
@@ -369,18 +397,24 @@ export default function App() {
                 Repuestos homologados disponibles:
               </p>
               <div className="flex flex-wrap gap-2">
-                {repair.spare_parts.map((part, idx) => (
-                  <span
-                    key={idx}
-                    className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-800 text-xs font-medium"
-                  >
-                    {part}
-                  </span>
-                ))}
+                {repair.spare_parts.map((part, idx) => {
+                  const isAasPart = aasSource === "basyx" && !fbRepair.spare_parts.includes(part);
+                  return (
+                    <span
+                      key={idx}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
+                        isAasPart
+                          ? "bg-slate-100 text-slate-800"
+                          : "bg-white border border-rose-300 text-rose-500 border-dotted"
+                      }`}
+                    >
+                      {part}
+                    </span>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Simulación realista de cambio de ciclo de vida (Art. 77.6) */}
             {role === "workshop" && (
               <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div>
@@ -454,7 +488,7 @@ export default function App() {
                   <h2 className="text-base font-bold text-slate-900">
                     Composición Química Detallada y Protocolo de Reciclaje
                   </h2>
-                  <p className="text-xs text-slate-500">{chemistry.source_node}</p>
+                  <p className="text-xs text-slate-500">{hl(chemistry.source_node, fbChemistry.source_node)}</p>
                 </div>
               </div>
               <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
@@ -465,15 +499,15 @@ export default function App() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                 <p className="text-slate-500 font-medium">Cátodo</p>
-                <p className="font-bold text-slate-900 mt-1">{chemistry.cathode}</p>
+                <p className="font-bold text-slate-900 mt-1">{hl(chemistry.cathode, fbChemistry.cathode)}</p>
               </div>
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                 <p className="text-slate-500 font-medium">Ánodo</p>
-                <p className="font-bold text-slate-900 mt-1">{chemistry.anode}</p>
+                <p className="font-bold text-slate-900 mt-1">{hl(chemistry.anode, fbChemistry.anode)}</p>
               </div>
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                 <p className="text-slate-500 font-medium">Electrolito</p>
-                <p className="font-bold text-slate-900 mt-1">{chemistry.electrolyte}</p>
+                <p className="font-bold text-slate-900 mt-1">{hl(chemistry.electrolyte, fbChemistry.electrolyte)}</p>
               </div>
             </div>
 
@@ -481,9 +515,9 @@ export default function App() {
               <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
               <div>
                 <p className="font-bold">Protocolo de neutralización segura:</p>
-                <p className="mt-0.5">{chemistry.safety_neutralization}</p>
+                <p className="mt-0.5">{hl(chemistry.safety_neutralization, fbChemistry.safety_neutralization)}</p>
                 <p className="mt-1.5 text-[11px] text-red-800">
-                  Sustancias peligrosas: {chemistry.hazardous_substances.join(" · ")}
+                  Sustancias peligrosas: {hl(chemistry.hazardous_substances.join(" · "), fbChemistry.hazardous_substances.join(" · "))}
                 </p>
               </div>
             </div>
@@ -510,7 +544,7 @@ export default function App() {
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
               <p className="text-slate-500 font-medium">Resistencia Interna Inicial</p>
               <p className="text-lg font-extrabold text-slate-900 mt-1">
-                {performance.internal_resistance_initial_mohm} mΩ
+                {hl(performance.internal_resistance_initial_mohm, fbPerformance.internal_resistance_initial_mohm, " mΩ")}
               </p>
               <p className="text-[11px] text-slate-500 mt-0.5">A 25 °C · 50% SoC</p>
             </div>
@@ -518,27 +552,27 @@ export default function App() {
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
               <p className="text-slate-500 font-medium">Eficiencia Ida y Vuelta</p>
               <p className="text-lg font-extrabold text-slate-900 mt-1">
-                {performance.round_trip_efficiency_initial_pct}%
+                {hl(performance.round_trip_efficiency_initial_pct, fbPerformance.round_trip_efficiency_initial_pct, "%")}
               </p>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                Al 50% vida: {performance.round_trip_efficiency_50pct_life_pct}%
+                Al 50% vida: {hl(performance.round_trip_efficiency_50pct_life_pct, fbPerformance.round_trip_efficiency_50pct_life_pct, "%")}
               </p>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
               <p className="text-slate-500 font-medium">Vida Útil Esperada</p>
               <p className="text-lg font-extrabold text-slate-900 mt-1">
-                {performance.expected_lifetime_cycles} ciclos
+                {hl(performance.expected_lifetime_cycles, fbPerformance.expected_lifetime_cycles, " ciclos")}
               </p>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                Garantía diseño: {performance.expected_lifetime_years} años
+                Garantía diseño: {hl(performance.expected_lifetime_years, fbPerformance.expected_lifetime_years, " años")}
               </p>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
               <p className="text-slate-500 font-medium">Umbral Agotamiento</p>
               <p className="text-lg font-extrabold text-slate-900 mt-1">
-                {performance.capacity_exhaustion_threshold_pct}% SoH
+                {hl(performance.capacity_exhaustion_threshold_pct, fbPerformance.capacity_exhaustion_threshold_pct, "% SoH")}
               </p>
               <p className="text-[11px] text-slate-500 mt-0.5">
                 Apto Segunda Vida &lt;80%
@@ -547,7 +581,7 @@ export default function App() {
           </div>
         </section>
 
-        {/* SECCIÓN PÚBLICA + B2G: Trazabilidad de Materias Primas y Diligencia Debida (Art. 48) */}
+        {/* SECCIÓN PÚBLICA + B2G: Trazabilidad y Diligencia Debida */}
         <section className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-sm space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
@@ -560,26 +594,26 @@ export default function App() {
                 </h2>
                 <p className="text-xs text-slate-500">
                   Artículos 48–52 · Auditoría Tercera Parte:{" "}
-                  <span className="font-mono">{dueDiligence.public_attestation.certificate_id}</span>
+                  <span className="font-mono">{hl(dueDiligence.public_attestation.certificate_id, fbDueDiligence.public_attestation.certificate_id)}</span>
                 </p>
               </div>
             </div>
             <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              {dueDiligence.public_attestation.status}
+              {hl(dueDiligence.public_attestation.status, fbDueDiligence.public_attestation.status)}
             </span>
           </div>
 
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 text-xs space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-bold text-slate-800">
-                Organismo Auditor: {dueDiligence.public_attestation.auditor}
+                Organismo Auditor: {hl(dueDiligence.public_attestation.auditor, fbDueDiligence.public_attestation.auditor)}
               </span>
               <span className="text-slate-500">
-                Fecha verificación: {dueDiligence.public_attestation.audit_date}
+                Fecha verificación: {hl(dueDiligence.public_attestation.audit_date, fbDueDiligence.public_attestation.audit_date)}
               </span>
             </div>
             <p className="text-slate-600 leading-relaxed">
-              {dueDiligence.public_attestation.summary}
+              {hl(dueDiligence.public_attestation.summary, fbDueDiligence.public_attestation.summary)}
             </p>
             <div className="flex flex-wrap gap-1.5 pt-1">
               {dueDiligence.public_attestation.covered_minerals.map((m, idx) => (
@@ -587,13 +621,12 @@ export default function App() {
                   key={idx}
                   className="px-2.5 py-0.5 rounded-md bg-white border border-slate-200 font-semibold text-slate-700"
                 >
-                  {m}
+                  {hl(m, fbDueDiligence.public_attestation.covered_minerals[idx] || "")}
                 </span>
               ))}
             </div>
           </div>
 
-          {/* Trazabilidad granular Tier-2/3: solo visible con credencial de Autoridad B2G */}
           {canViewTier3Supply ? (
             <div className="p-4 rounded-xl bg-sky-50/70 border border-sky-200 space-y-3">
               <div className="flex items-center justify-between">
@@ -605,23 +638,26 @@ export default function App() {
                 </span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-                {dueDiligence.restricted_tier_traceability.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3 rounded-lg bg-white border border-sky-200/80 space-y-1"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-900">{item.mineral}</span>
-                      <span className="font-mono text-[10px] text-sky-700">
-                        {item.batch_vc}
-                      </span>
+                {dueDiligence.restricted_tier_traceability.map((item, idx) => {
+                  const fbItem = fbDueDiligence.restricted_tier_traceability[idx] || {};
+                  return (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-lg bg-white border border-sky-200/80 space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900">{hl(item.mineral, fbItem.mineral)}</span>
+                        <span className="font-mono text-[10px] text-sky-700">
+                          {hl(item.batch_vc, fbItem.batch_vc)}
+                        </span>
+                      </div>
+                      <p className="text-slate-600">{hl(item.origin, fbItem.origin)}</p>
+                      <p className="text-[11px] font-medium text-slate-500">
+                        Refinería: {hl(item.refiner, fbItem.refiner)}
+                      </p>
                     </div>
-                    <p className="text-slate-600">{item.origin}</p>
-                    <p className="text-[11px] font-medium text-slate-500">
-                      Refinería: {item.refiner}
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ) : (
@@ -657,28 +693,31 @@ export default function App() {
                   Huella de Carbono Declarada
                 </span>
                 <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800">
-                  {carbon.performance_class}
+                  {hl(carbon.performance_class, fbCarbon.performance_class)}
                 </span>
               </div>
               <p className="text-2xl font-extrabold text-slate-900">
-                {carbon.carbon_footprint_kg_kwh}{" "}
+                {hl(carbon.carbon_footprint_kg_kwh, fbCarbon.carbon_footprint_kg_kwh)}{" "}
                 <span className="text-xs font-normal text-slate-500">kg CO₂e/kWh</span>
               </p>
               <div className="space-y-1.5 pt-1">
-                {carbon.lifecycle_breakdown.map((item, i) => (
-                  <div key={i} className="text-xs">
-                    <div className="flex justify-between text-slate-600 mb-0.5">
-                      <span>{item.stage}</span>
-                      <span className="font-semibold">{item.share}%</span>
+                {carbon.lifecycle_breakdown.map((item, i) => {
+                  const fbItem = fbCarbon.lifecycle_breakdown[i] || {};
+                  return (
+                    <div key={i} className="text-xs">
+                      <div className="flex justify-between text-slate-600 mb-0.5">
+                        <span>{hl(item.stage, fbItem.stage)}</span>
+                        <span className="font-semibold">{hl(item.share, fbItem.share, "%")}</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-baidata-purple rounded-full"
+                          style={{ width: `${item.share}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-baidata-purple rounded-full"
-                        style={{ width: `${item.share}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -687,29 +726,32 @@ export default function App() {
                 Contenido Reciclado Certificado (vs. Meta UE 2031)
               </p>
               <div className="space-y-2.5">
-                {carbon.recycled_content.map((mat, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between p-2.5 rounded-lg bg-white border border-slate-200/70 text-xs"
-                  >
-                    <span className="font-medium text-slate-800">{mat.material}</span>
-                    <div className="text-right">
-                      <span className="font-extrabold text-baidata-purple text-sm">
-                        {mat.actual}%
-                      </span>
-                      <span className="text-[11px] text-slate-400 ml-1.5">
-                        (Meta: {mat.target_2031}%)
-                      </span>
+                {carbon.recycled_content.map((mat, i) => {
+                  const fbMat = fbCarbon.recycled_content.find((m) => m.material === mat.material) || {};
+                  return (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between p-2.5 rounded-lg bg-white border border-slate-200/70 text-xs"
+                    >
+                      <span className="font-medium text-slate-800">{mat.material}</span>
+                      <div className="text-right">
+                        <span className="font-extrabold text-baidata-purple text-sm">
+                          {hl(mat.actual, fbMat.actual, "%")}
+                        </span>
+                        <span className="text-[11px] text-slate-400 ml-1.5">
+                          (Meta: {hl(mat.target_2031, fbMat.target_2031, "%")})
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
 
           <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs text-slate-600">
             <strong className="text-slate-800">Instrucciones de fin de vida: </strong>
-            {carbon.end_of_life_info}
+            {hl(carbon.end_of_life_info, fbCarbon.end_of_life_info)}
           </div>
         </section>
 
@@ -725,13 +767,13 @@ export default function App() {
                   Declaración UE de Conformidad y Normativa
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Ref: {compliance.eu_declaration_id} · Organismo: {compliance.notified_body}
+                  Ref: {hl(compliance.eu_declaration_id, fbCompliance.eu_declaration_id)} · Organismo: {hl(compliance.notified_body, fbCompliance.notified_body)}
                 </p>
               </div>
             </div>
             {role === "authority" && (
               <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-sky-100 text-sky-800">
-                Sello eIDAS Verificado · {compliance.audit_date}
+                Sello eIDAS Verificado · {hl(compliance.audit_date, fbCompliance.audit_date)}
               </span>
             )}
           </div>
@@ -742,7 +784,7 @@ export default function App() {
                 key={idx}
                 className="px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700"
               >
-                {std}
+                {hl(std, fbCompliance.standards_applied[idx] || "")}
               </span>
             ))}
           </div>
@@ -765,7 +807,6 @@ export default function App() {
         </section>
       </main>
 
-      {/* Pie de página discreto con acceso técnico M2M para demostraciones */}
       <footer className="border-t border-slate-200 bg-white mt-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
           <p>
