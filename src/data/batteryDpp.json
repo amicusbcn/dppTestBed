@@ -2,6 +2,12 @@
   "gs1_digital_link": "https://dpp.baidata.eu/01/08412345678905/21/BAT-2026-8841",
   "battery_id": "BAT-2026-8841",
   "status": "Activa · Primera Vida",
+  "responsible_operator": {
+    "name": "IberiaVolt Mobility S.L.",
+    "eori_vat": "ESB95841209",
+    "role": "Fabricante OEM (Puesta en el mercado inicial)",
+    "did": "did:web:iberiavolt-mobility.es"
+  },
   "submodels": {
     "public_nameplate": {
       "aas_submodel_id": "urn:baidata:aas:submodel:nameplate:BAT-2026-8841",
@@ -13,8 +19,27 @@
       "battery_category": "Movilidad Ligera (LMT)",
       "chemistry": "NMC 811 (Litio-Níquel-Manganeso-Cobalto)",
       "nominal_capacity_wh": 625,
+      "rated_capacity_ah": 17.36,
       "nominal_voltage_v": 36,
-      "weight_kg": 3.4
+      "voltage_range_v": "30.0 V – 42.0 V",
+      "weight_kg": 3.4,
+      "extinguishing_agents": [
+        "Agua pulverizada en abundancia (refrigeración de celdas)",
+        "Agentes encapsuladores Clase D / F-500 / Vermiculita"
+      ],
+      "heavy_metals_declaration": "Libre de Mercurio (Hg), Cadmio (Cd) y Plomo (Pb) sobre umbrales UE",
+      "collection_symbol": "ISO 7000-1135 · Recogida separada obligatoria"
+    },
+    "performance_durability": {
+      "aas_submodel_id": "urn:baidata:aas:submodel:performance:BAT-2026-8841",
+      "source_node": "Nodo EDC OEM + Pasarela BMS",
+      "internal_resistance_initial_mohm": 38.5,
+      "internal_resistance_current_mohm": 43.2,
+      "round_trip_efficiency_initial_pct": 94.2,
+      "round_trip_efficiency_50pct_life_pct": 91.0,
+      "expected_lifetime_cycles": 1000,
+      "expected_lifetime_years": 8,
+      "capacity_exhaustion_threshold_pct": 70
     },
     "carbon_circularity": {
       "aas_submodel_id": "urn:baidata:aas:submodel:carbon:BAT-2026-8841",
@@ -32,6 +57,44 @@
         { "material": "Níquel reciclado", "actual": 8, "target_2031": 6 }
       ],
       "end_of_life_info": "Entregar exclusivamente en puntos de recogida autorizados o red de distribuidores oficiales. No desechar en residuos urbanos."
+    },
+    "supply_chain_due_diligence": {
+      "aas_submodel_id": "urn:baidata:aas:submodel:due-diligence:BAT-2026-8841",
+      "source_node": "Nodo EDC Fabricante de Celdas (EuroCell) + Auditoría Tercera Parte",
+      "public_attestation": {
+        "status": "Verificado · Conforme Art. 48 Reglamento (UE) 2023/1542",
+        "auditor": "DNV Business Assurance (Organismo Acreditado Tercera Parte)",
+        "certificate_id": "DD-EU-2026-EC-9941",
+        "audit_date": "2026-03-15",
+        "covered_minerals": ["Cobalto", "Litio", "Níquel", "Grafito natural"],
+        "summary": "Cadena de suministro auditada conforme a la Guía de Diligencia Debida de la OCDE. Sin riesgos críticos en zonas de conflicto o alto riesgo (CAHRAs)."
+      },
+      "restricted_tier_traceability": [
+        {
+          "mineral": "Litio (LiOH·H₂O)",
+          "origin": "Chile (Salar de Atacama) · Refinado en Portugal",
+          "refiner": "SQM / Galp Refining JV (RMI Conformant)",
+          "batch_vc": "vc:trace:li:2026-0411"
+        },
+        {
+          "mineral": "Cobalto (CoSO₄)",
+          "origin": "R.D. Congo (Mina auditada RMAP) · Refinado en Finlandia",
+          "refiner": "Umicore Kokkola Refinery",
+          "batch_vc": "vc:trace:co:2026-0389"
+        },
+        {
+          "mineral": "Níquel (NiSO₄)",
+          "origin": "Canadá (Sudbury) · Refinado en Noruega",
+          "refiner": "Glencore Nikkelverk",
+          "batch_vc": "vc:trace:ni:2026-0402"
+        },
+        {
+          "mineral": "Grafito natural",
+          "origin": "Mozambique · Procesado anódico en Suecia",
+          "refiner": "Talga Anode Sweden AB",
+          "batch_vc": "vc:trace:gr:2026-0375"
+        }
+      ]
     },
     "dynamic_bms": {
       "aas_submodel_id": "urn:baidata:aas:submodel:bms-dynamic:BAT-2026-8841",
