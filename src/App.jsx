@@ -1,554 +1,495 @@
-import React, { useState } from 'react';
-import dppData from './data/batteryDpp.json';
-import BaidataHeader from './components/BaidataHeader';
-import OwnerAuthModal from './components/OwnerAuthModal';
-import EdcTraceModal from './components/EdcTraceModal';
+import React, { useState } from "react";
+import dppData from "./data/batteryDpp.json";
+import BaidataHeader from "./components/BaidataHeader";
+import WalletAuthModal from "./components/WalletAuthModal";
+import EdcTraceModal from "./components/EdcTraceModal";
 import {
+  QrCode,
   BatteryCharging,
   Leaf,
+  Factory,
   Wrench,
   Recycle,
-  Landmark,
-  Lock,
-  Server,
-  Share2,
+  Scale,
+  ShieldCheck,
   CheckCircle2,
   AlertTriangle,
   FileText,
+  Server,
   PlusCircle,
-  QrCode,
-  ChevronRight,
-  ShieldAlert,
-} from 'lucide-react';
+  Lock,
+} from "lucide-react";
 
 export default function App() {
-  const [role, setRole] = useState('public');
-  const [ownerAuthMethod, setOwnerAuthMethod] = useState(null);
-  const [showOwnerModal, setShowOwnerModal] = useState(false);
-  const [showTraceModal, setShowTraceModal] = useState(false);
-  const [appraiserLink, setAppraiserLink] = useState(null);
-  const [serviceLog, setServiceLog] = useState(dppData.submodels.workshop_repair.service_log);
+  const [activeCredential, setActiveCredential] = useState(null);
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
+  const [isTraceOpen, setIsTraceOpen] = useState(false);
+  const [serviceLogs, setServiceLogs] = useState(
+    dppData.submodels.workshop_repair.service_log
+  );
 
-  const { submodels } = dppData;
-  const isEdcB2B = role === 'workshop' || role === 'recycler' || role === 'authority';
+  const role = activeCredential?.id || "public";
+  const canViewBms = ["owner", "workshop", "authority"].includes(role);
+  const canViewRepair = ["workshop", "authority"].includes(role);
+  const canViewChemistry = ["recycler", "authority"].includes(role);
 
-  const handleSelectRole = (nextRole) => {
-    if (nextRole === 'owner' && !ownerAuthMethod) {
-      setShowOwnerModal(true);
-      return;
-    }
-    setRole(nextRole);
-  };
+  const {
+    public_nameplate: nameplate,
+    carbon_circularity: carbon,
+    dynamic_bms: bms,
+    workshop_repair: repair,
+    recycler_chemistry: chemistry,
+    regulatory_compliance: compliance,
+  } = dppData.submodels;
 
-  const handleOwnerAuthenticated = (method) => {
-    setOwnerAuthMethod(method);
-    setShowOwnerModal(false);
-    setRole('owner');
-  };
-
-  const handleGenerateDataActToken = () => {
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    setAppraiserLink(`https://dpp.baidata.eu/api/v1/share/SOH-${code}?scope=anexoXIII.4&ttl=24h`);
-  };
-
-  const handleAddServiceEntry = () => {
-    const entry = {
-      date: new Date().toISOString().split('T')[0],
-      operator: 'Nodo EDC Taller Demo BAIDATA (DID:web:taller-demo.baidata.eu)',
-      action: 'Diagnóstico preventivo de celdas y actualización de firmware BMS',
-    };
-    setServiceLog([entry, ...serviceLog]);
+  const handleAddServiceRecord = () => {
+    const today = new Date().toISOString().split("T")[0];
+    setServiceLogs([
+      {
+        date: today,
+        operator: `${activeCredential.holderName} (${activeCredential.did})`,
+        action: "Diagnóstico preventivo de celdas y actualización firmware BMS v2.5",
+      },
+      ...serviceLogs,
+    ]);
   };
 
   return (
-    <div className="min-h-screen bg-baidata-bg text-baidata-ink pb-16 flex flex-col">
+    <div className="min-h-screen flex flex-col bg-baidata-bg text-baidata-ink">
       <BaidataHeader
-        role={role}
-        onSelectRole={handleSelectRole}
-        onOpenTrace={() => setShowTraceModal(true)}
+        activeCredential={activeCredential}
+        onOpenWallet={() => setIsWalletOpen(true)}
+        onLogout={() => setActiveCredential(null)}
       />
 
-      {/* FRANJA DE CONTEXTO DE CANAL */}
-      <div
-        className={`border-b px-4 py-2.5 text-xs ${
-          isEdcB2B
-            ? 'bg-baidata-ink text-white border-slate-800'
-            : role === 'owner'
-            ? 'bg-baidata-lavender/50 text-baidata-ink border-baidata-lavender'
-            : 'bg-white text-slate-700 border-slate-200'
-        }`}
-      >
-        <div className="max-w-3xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-          {role === 'public' && (
-            <span>
-              <strong className="text-baidata-purple">Vista Pública B2C (Portal DPPSP):</strong>{' '}
-              Aterrizaje tras escaneo de código QR GS1 Digital Link. Acceso abierto sin autenticación.
-            </span>
-          )}
-          {role === 'owner' && (
-            <span>
-              <strong className="text-baidata-purple">Canal B2B2C Propietario:</strong> Autenticado
-              vía <span className="underline font-semibold">{ownerAuthMethod}</span>. El portal
-              consulta el SoH al espacio de datos en tu nombre.
-            </span>
-          )}
-          {role === 'workshop' && (
-            <span className="font-mono text-baidata-lavender">
-              ⚡ CONEXIÓN EDC-A-EDC · Rol: Taller Reparación · Contrato ODRL: Lectura [BMS +
-              Despiece] + Escritura [Historial]
-            </span>
-          )}
-          {role === 'recycler' && (
-            <span className="font-mono text-baidata-lavender">
-              ⚡ CONEXIÓN EDC-A-EDC · Rol: Gestor Residuos · Contrato ODRL: Lectura [Química
-              Confidencial] (Principio minimización)
-            </span>
-          )}
-          {role === 'authority' && (
-            <span className="font-mono text-baidata-lavender">
-              ⚡ CONEXIÓN EDC-A-EDC (B2G) · Sello eIDAS Autoridad Vigilancia · Acceso total a todos
-              los submodelos
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* CONTENIDO DEL PASAPORTE */}
-      <main className="max-w-3xl w-full mx-auto px-4 pt-6 space-y-5 flex-1">
-        {/* TARJETA 1: IDENTIFICACIÓN GENERAL */}
-        <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-baidata-purple mb-2">
-                <CheckCircle2 className="w-4 h-4 text-baidata-purple" />
-                {dppData.status}
-              </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-baidata-ink tracking-tight">
-                {submodels.public_nameplate.product_name}
-              </h1>
-              <p className="text-sm text-slate-600 mt-0.5">
-                {submodels.public_nameplate.manufacturer} ·{' '}
-                {submodels.public_nameplate.manufacturing_plant}
-              </p>
-              <div className="mt-3 inline-flex items-center gap-1.5 bg-baidata-bg px-3 py-1.5 rounded-lg text-[11px] font-mono text-slate-600 break-all border border-slate-200/70">
-                <QrCode className="w-3.5 h-3.5 text-baidata-purple shrink-0" />
-                {dppData.gs1_digital_link}
-              </div>
-            </div>
-
-            <div className="bg-baidata-purple text-white rounded-2xl p-4 text-right shrink-0">
-              <div className="text-[11px] text-white/80 font-semibold">Capacidad Nominal</div>
-              <div className="text-2xl font-extrabold mt-0.5">
-                {submodels.public_nameplate.nominal_capacity_wh} Wh
-              </div>
-              <div className="text-xs text-white/85">
-                {submodels.public_nameplate.nominal_voltage_v}V ·{' '}
-                {submodels.public_nameplate.weight_kg} kg
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-100 text-xs">
-            <div>
-              <span className="text-slate-400 block">Química de celda</span>
-              <span className="font-bold text-baidata-ink">
-                {submodels.public_nameplate.chemistry}
-              </span>
-            </div>
-            <div>
-              <span className="text-slate-400 block">Fecha de fabricación</span>
-              <span className="font-bold text-baidata-ink">
-                {submodels.public_nameplate.manufacturing_date}
-              </span>
-            </div>
-            <div>
-              <span className="text-slate-400 block">Categoría UE</span>
-              <span className="font-bold text-baidata-ink">
-                {submodels.public_nameplate.battery_category}
-              </span>
-            </div>
-          </div>
-
-          <FederatedSourceFooter
-            source={submodels.public_nameplate.source_node}
-            aasId={submodels.public_nameplate.aas_submodel_id}
-          />
-        </section>
-
-        {/* TARJETA 2: HUELLA DE CARBONO Y CIRCULARIDAD */}
-        <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
-          <div className="flex items-center gap-2 mb-4">
-            <Leaf className="w-4 h-4 text-baidata-purple" />
-            <span className="text-xs font-bold text-baidata-purple">
-              Sostenibilidad y Circularidad · Anexo XIII.1 (Acceso Público)
-            </span>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-4 items-center">
-            <div className="bg-baidata-lavenderSoft border border-baidata-lavender/60 rounded-2xl p-4">
-              <div className="text-xs text-baidata-purple font-bold">
-                Huella de Carbono Declarada
-              </div>
-              <div className="text-3xl font-extrabold text-baidata-ink my-1">
-                {submodels.carbon_circularity.carbon_footprint_kg_kwh}{' '}
-                <span className="text-xs font-semibold text-slate-600">kg CO₂e/kWh</span>
-              </div>
-              <div className="inline-block text-[11px] bg-white text-baidata-purple px-2.5 py-0.5 rounded-full font-bold border border-baidata-lavender">
-                {submodels.carbon_circularity.performance_class}
-              </div>
-            </div>
-
-            <div className="space-y-2.5">
-              <div className="text-xs font-bold text-baidata-ink">
-                Contenido Reciclado Certificado
-              </div>
-              {submodels.carbon_circularity.recycled_content.map((item, idx) => (
-                <div key={idx}>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="font-semibold text-slate-700">{item.material}</span>
-                    <span className="font-mono text-slate-600">
-                      {item.actual}%{' '}
-                      <span className="text-slate-400">(Meta UE: {item.target_2031}%)</span>
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2">
-                    <div
-                      className="bg-baidata-purple h-2 rounded-full"
-                      style={{ width: `${Math.min(item.actual * 4, 100)}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <p className="text-xs text-slate-600 mt-4 bg-baidata-bg p-3 rounded-xl">
-            <strong className="text-baidata-ink">Recogida y reciclaje:</strong>{' '}
-            {submodels.carbon_circularity.end_of_life_info}
-          </p>
-
-          <FederatedSourceFooter
-            source={submodels.carbon_circularity.source_node}
-            aasId={submodels.carbon_circularity.aas_submodel_id}
-          />
-        </section>
-
-        {/* BLOQUE LAVANDA DE ACCESOS (INSPIRADO EN LAS SECCIONES DE BAIDATA.EU) */}
-        {role === 'public' && (
-          <section className="bg-baidata-lavender/55 rounded-3xl p-5 sm:p-6">
-            <div className="flex items-start gap-3 mb-4">
-              <Lock className="w-5 h-5 text-baidata-purple shrink-0 mt-0.5" />
-              <div>
-                <h3 className="text-base font-extrabold text-baidata-ink">
-                  Capas de Datos Restringidas
-                </h3>
-                <p className="text-xs text-slate-700 mt-0.5">
-                  El Estado de Salud (SoH), el despiece técnico y la composición química están
-                  protegidos por políticas de acceso. Elige tu canal:
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+        {/* Banner contextual solo si hay una credencial verificada */}
+        {activeCredential && (
+          <div className="p-4 rounded-2xl bg-emerald-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+            <div className="flex items-start sm:items-center gap-3">
+              <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5 sm:mt-0" />
+              <div className="text-xs">
+                <p className="font-bold text-sm">
+                  Acceso autenticado: {activeCredential.holderName}
+                </p>
+                <p className="text-emerald-200/80 font-mono text-[11px] mt-0.5">
+                  {activeCredential.did} · {activeCredential.policyGranted}
                 </p>
               </div>
             </div>
+            <span className="inline-flex items-center self-start sm:self-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-800/80 text-emerald-200">
+              Submodelos autorizados desbloqueados
+            </span>
+          </div>
+        )}
 
-            <div className="grid sm:grid-cols-2 gap-3">
-              <button
-                onClick={() => setShowOwnerModal(true)}
-                className="p-4 rounded-2xl bg-white hover:shadow-md text-left transition flex items-center justify-between group"
-              >
-                <div>
-                  <div className="text-sm font-extrabold text-baidata-ink">
-                    Soy el Propietario
-                  </div>
-                  <div className="text-xs text-slate-500 mt-0.5">
-                    Canal B2B2C · Ver SoH y compartir vía Data Act
-                  </div>
-                  <div className="mt-2.5 inline-flex items-center gap-1 text-xs font-bold text-baidata-purple">
-                    Autenticarme <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                  </div>
-                </div>
-              </button>
+        {/* Cabecera del producto (Placa de características pública - Anexo XIII) */}
+        <section className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-sm space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              {dppData.status}
+            </span>
+            <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md">
+              ID: {dppData.battery_id}
+            </span>
+          </div>
 
-              <button
-                onClick={() => setRole('workshop')}
-                className="p-4 rounded-2xl bg-white hover:shadow-md text-left transition flex items-center justify-between group"
-              >
-                <div>
-                  <div className="text-sm font-extrabold text-baidata-ink">
-                    Acceso Profesional (EDC)
-                  </div>
-                  <div className="text-xs text-slate-500 mt-0.5">
-                    Canal B2B · Taller, Reciclador o Autoridad
-                  </div>
-                  <div className="mt-2.5 inline-flex items-center gap-1 text-xs font-bold text-baidata-purple">
-                    Simular túnel EDC <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                  </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+              {nameplate.product_name}
+            </h1>
+            <p className="text-sm text-slate-600 mt-1 flex items-center gap-1.5">
+              <Factory className="w-4 h-4 text-slate-400 shrink-0" />
+              <span>
+                {nameplate.manufacturer} · {nameplate.manufacturing_plant}
+              </span>
+            </p>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-2.5 text-xs font-mono text-slate-600 overflow-x-auto">
+            <QrCode className="w-4 h-4 text-baidata-purple shrink-0" />
+            <span className="truncate">{dppData.gs1_digital_link}</span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+            <div className="p-3.5 rounded-xl bg-baidata-lavenderSoft/50 border border-baidata-lavender/60">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-baidata-purple">
+                Capacidad Nominal
+              </p>
+              <p className="text-xl font-extrabold text-slate-900 mt-1">
+                {nameplate.nominal_capacity_wh} Wh
+              </p>
+              <p className="text-xs text-slate-600 mt-0.5">
+                {nameplate.nominal_voltage_v}V · {nameplate.weight_kg} kg
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                Química de celda
+              </p>
+              <p className="text-sm font-bold text-slate-900 mt-1">
+                {nameplate.chemistry}
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                Fabricación
+              </p>
+              <p className="text-sm font-bold text-slate-900 mt-1">
+                {nameplate.manufacturing_date}
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                Categoría UE
+              </p>
+              <p className="text-sm font-bold text-slate-900 mt-1">
+                {nameplate.battery_category}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* SUBMODELO DESBLOQUEADO: Estado Dinámico BMS (Propietario / Taller / Autoridad) */}
+        {canViewBms && (
+          <section className="bg-white rounded-2xl border-2 border-baidata-purple/30 p-6 shadow-sm space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-baidata-lavenderSoft text-baidata-purple">
+                  <BatteryCharging className="w-5 h-5" />
                 </div>
-              </button>
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">
+                    Estado de Salud y Telemetría BMS
+                  </h2>
+                  <p className="text-xs text-slate-500">{bms.last_sync}</p>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-baidata-lavenderSoft text-baidata-purple">
+                Acceso Autorizado · BMS
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200">
+                <p className="text-xs font-medium text-emerald-800">
+                  Estado de Salud (SoH)
+                </p>
+                <p className="text-2xl font-extrabold text-emerald-900 mt-1">
+                  {bms.state_of_health_soh}%
+                </p>
+                <p className="text-[11px] text-emerald-700 mt-0.5">
+                  Capacidad útil: {bms.remaining_capacity_wh} Wh
+                </p>
+              </div>
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <p className="text-xs font-medium text-slate-600">Ciclos de carga</p>
+                <p className="text-2xl font-extrabold text-slate-900 mt-1">
+                  {bms.charge_cycles}
+                </p>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Rango operativo: {bms.operating_temp_range}
+                </p>
+              </div>
+              <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200">
+                <p className="text-xs font-medium text-amber-800">Eventos térmicos</p>
+                <p className="text-sm font-bold text-amber-950 mt-1">
+                  {bms.extreme_events[0].event}
+                </p>
+                <p className="text-[11px] text-amber-700 mt-0.5">
+                  {bms.extreme_events[0].date} · {bms.extreme_events[0].impact}
+                </p>
+              </div>
             </div>
           </section>
         )}
 
-        {/* TARJETA 3: ESTADO DE SALUD Y USO DINÁMICO */}
-        {(role === 'owner' || role === 'workshop' || role === 'authority') && (
-          <section className="bg-white rounded-2xl border-2 border-baidata-purple/40 p-5 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-              <div className="flex items-center gap-2">
-                <BatteryCharging className="w-4 h-4 text-baidata-purple" />
-                <span className="text-xs font-bold text-baidata-purple">
-                  Estado de Salud (SoH) y Telemetría BMS · Anexo XIII.4
-                </span>
+        {/* SUBMODELO DESBLOQUEADO: Reparabilidad y Despiece (Taller / Autoridad) */}
+        {canViewRepair && (
+          <section className="bg-white rounded-2xl border-2 border-amber-400/50 p-6 shadow-sm space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-50 text-amber-700">
+                  <Wrench className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">
+                    Información Técnica de Reparación y Despiece
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Arquitectura: {repair.cell_architecture} · Manual:{" "}
+                    <span className="font-mono">{repair.disassembly_manual}</span>
+                  </p>
+                </div>
               </div>
-              <span className="text-[11px] font-mono bg-baidata-bg text-slate-600 px-2.5 py-1 rounded-full">
-                {submodels.dynamic_bms.last_sync}
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800">
+                Acceso B2B · Taller Certificado
               </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 text-center mb-4">
-              <div className="bg-baidata-lavenderSoft border border-baidata-lavender/60 rounded-2xl p-3">
-                <div className="text-[11px] font-bold text-baidata-purple">Estado de Salud</div>
-                <div className="text-2xl font-extrabold text-baidata-ink">
-                  {submodels.dynamic_bms.state_of_health_soh}%
-                </div>
-              </div>
-              <div className="bg-baidata-bg rounded-2xl p-3">
-                <div className="text-[11px] text-slate-500">Ciclos de Carga</div>
-                <div className="text-2xl font-extrabold text-baidata-ink">
-                  {submodels.dynamic_bms.charge_cycles}
-                </div>
-              </div>
-              <div className="bg-baidata-bg rounded-2xl p-3">
-                <div className="text-[11px] text-slate-500">Capacidad Útil</div>
-                <div className="text-2xl font-extrabold text-baidata-ink">
-                  {submodels.dynamic_bms.remaining_capacity_wh} Wh
-                </div>
+            <div>
+              <p className="text-xs font-semibold text-slate-700 mb-2">
+                Repuestos homologados disponibles:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {repair.spare_parts.map((part, idx) => (
+                  <span
+                    key={idx}
+                    className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-800 text-xs font-medium"
+                  >
+                    {part}
+                  </span>
+                ))}
               </div>
             </div>
 
-            {submodels.dynamic_bms.extreme_events.map((ev, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-2 text-xs bg-amber-50 text-amber-950 border border-amber-200 p-3 rounded-xl"
-              >
-                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                <span>
-                  <strong>{ev.date}:</strong> {ev.event} ({ev.impact})
-                </span>
-              </div>
-            ))}
-
-            {/* DELEGACIÓN EU DATA ACT */}
-            {role === 'owner' && (
-              <div className="mt-4 pt-4 border-t border-slate-100">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-xs font-extrabold text-baidata-ink">
-                      Delegación a Tasador / Comprador 2ª Mano (EU Data Act Art. 5)
-                    </h3>
-                    <p className="text-[11px] text-slate-500">
-                      Genera un acceso temporal vía API del DPPSP para acreditar el SoH sin ceder
-                      tu cuenta.
-                    </p>
-                  </div>
+            <div className="space-y-2.5 pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-slate-700">
+                  Historial federado de intervenciones (Trazabilidad AAS)
+                </p>
+                {role === "workshop" && (
                   <button
-                    onClick={handleGenerateDataActToken}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-baidata-purple hover:bg-baidata-purpleDark text-white text-xs font-bold rounded-full shrink-0 transition"
+                    type="button"
+                    onClick={handleAddServiceRecord}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-600 text-white hover:bg-amber-700 transition"
                   >
-                    <Share2 className="w-3.5 h-3.5" /> Autorizar consulta (24h)
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    <span>Registrar intervención</span>
                   </button>
-                </div>
-                {appraiserLink && (
-                  <div className="mt-2.5 p-3 bg-baidata-ink text-baidata-lavender font-mono text-[11px] rounded-xl flex items-center justify-between gap-2 break-all">
-                    <span>{appraiserLink}</span>
-                    <span className="text-[10px] bg-baidata-purple text-white px-2 py-0.5 rounded-full shrink-0">
-                      OAuth2 Token
-                    </span>
-                  </div>
                 )}
               </div>
-            )}
-
-            <FederatedSourceFooter
-              source={submodels.dynamic_bms.source_node}
-              aasId={submodels.dynamic_bms.aas_submodel_id}
-            />
-          </section>
-        )}
-
-        {/* TARJETA 4: REPARACIÓN Y DESPIECE (TALLER Y AUTORIDAD) */}
-        {(role === 'workshop' || role === 'authority') && (
-          <section className="bg-white rounded-2xl border-2 border-baidata-purple/50 p-5 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-              <div className="flex items-center gap-2">
-                <Wrench className="w-4 h-4 text-baidata-purple" />
-                <span className="text-xs font-bold text-baidata-purple">
-                  Manual de Desmontaje y Reparación · Anexo XIII.2 (Taller)
-                </span>
-              </div>
-              {role === 'workshop' && (
-                <button
-                  onClick={handleAddServiceEntry}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-baidata-purple hover:bg-baidata-purpleDark text-white text-xs font-bold rounded-full transition"
-                >
-                  <PlusCircle className="w-3.5 h-3.5" /> Escribir intervención en EDC
-                </button>
-              )}
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-3 text-xs mb-4">
-              <div className="bg-baidata-bg p-3 rounded-xl">
-                <span className="text-slate-400 block">Arquitectura de celdas</span>
-                <span className="font-bold text-baidata-ink">
-                  {submodels.workshop_repair.cell_architecture}
-                </span>
-              </div>
-              <div className="bg-baidata-bg p-3 rounded-xl">
-                <span className="text-slate-400 block">Documentación técnica OEM</span>
-                <span className="font-bold text-baidata-purple flex items-center gap-1 mt-0.5">
-                  <FileText className="w-3.5 h-3.5" /> {submodels.workshop_repair.disassembly_manual}
-                </span>
-              </div>
-            </div>
-
-            <div className="text-xs font-bold text-baidata-ink mb-2">
-              Bitácora Federada de Mantenimiento (Datos escritos en origen por talleres):
-            </div>
-            <div className="space-y-2">
-              {serviceLog.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="text-xs bg-baidata-bg p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-1"
-                >
-                  <div>
-                    <div className="font-bold text-baidata-ink">{item.action}</div>
-                    <div className="text-[11px] text-slate-500 font-mono">{item.operator}</div>
+              <div className="space-y-2">
+                {serviceLogs.map((log, i) => (
+                  <div
+                    key={i}
+                    className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-1 text-slate-500">
+                      <span className="font-semibold text-slate-800">{log.operator}</span>
+                      <span className="font-mono">{log.date}</span>
+                    </div>
+                    <p className="text-slate-700 mt-1">{log.action}</p>
                   </div>
-                  <span className="font-mono text-[11px] text-slate-400 shrink-0">{item.date}</span>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* SUBMODELO DESBLOQUEADO: Química Confidencial (Reciclador / Autoridad) */}
+        {canViewChemistry && (
+          <section className="bg-white rounded-2xl border-2 border-emerald-500/40 p-6 shadow-sm space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700">
+                  <Recycle className="w-5 h-5" />
                 </div>
-              ))}
-            </div>
-
-            <FederatedSourceFooter
-              source={submodels.workshop_repair.source_node}
-              aasId={submodels.workshop_repair.aas_submodel_id}
-            />
-          </section>
-        )}
-
-        {/* TARJETA 5: COMPOSICIÓN QUÍMICA DETALLADA (RECICLADOR Y AUTORIDAD) */}
-        {(role === 'recycler' || role === 'authority') && (
-          <section className="bg-white rounded-2xl border-2 border-baidata-purple/50 p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <Recycle className="w-4 h-4 text-baidata-purple" />
-              <span className="text-xs font-bold text-baidata-purple">
-                Composición Química y Seguridad · Anexo XIII.2 (Reciclador)
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">
+                    Composición Química Detallada y Protocolo de Reciclaje
+                  </h2>
+                  <p className="text-xs text-slate-500">{chemistry.source_node}</p>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
+                Acceso B2B · Gestor Autorizado
               </span>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-2.5 text-xs mb-3">
-              <div className="p-3 bg-baidata-lavenderSoft/60 rounded-xl">
-                <span className="text-slate-500 block">Cátodo</span>
-                <strong className="text-baidata-ink">{submodels.recycler_chemistry.cathode}</strong>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                <p className="text-slate-500 font-medium">Cátodo</p>
+                <p className="font-bold text-slate-900 mt-1">{chemistry.cathode}</p>
               </div>
-              <div className="p-3 bg-baidata-lavenderSoft/60 rounded-xl">
-                <span className="text-slate-500 block">Ánodo</span>
-                <strong className="text-baidata-ink">{submodels.recycler_chemistry.anode}</strong>
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                <p className="text-slate-500 font-medium">Ánodo</p>
+                <p className="font-bold text-slate-900 mt-1">{chemistry.anode}</p>
               </div>
-              <div className="p-3 bg-baidata-lavenderSoft/60 rounded-xl">
-                <span className="text-slate-500 block">Electrolito</span>
-                <strong className="text-baidata-ink">
-                  {submodels.recycler_chemistry.electrolyte}
-                </strong>
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                <p className="text-slate-500 font-medium">Electrolito</p>
+                <p className="font-bold text-slate-900 mt-1">{chemistry.electrolyte}</p>
               </div>
-              <div className="p-3 bg-red-50 rounded-xl border border-red-200 text-red-950">
-                <span className="text-red-700 font-bold flex items-center gap-1">
-                  <ShieldAlert className="w-3.5 h-3.5" /> Sustancias peligrosas
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-xs text-red-900">
+              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold">Protocolo de neutralización segura:</p>
+                <p className="mt-0.5">{chemistry.safety_neutralization}</p>
+                <p className="mt-1.5 text-[11px] text-red-800">
+                  Sustancias peligrosas: {chemistry.hazardous_substances.join(" · ")}
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* SECCIÓN PÚBLICA: Sostenibilidad y Circularidad (Anexo XIII.1) */}
+        <section className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-sm space-y-5">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700">
+              <Leaf className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-900">
+                Sostenibilidad y Circularidad
+              </h2>
+              <p className="text-xs text-slate-500">
+                Información pública obligatoria · Reglamento (UE) 2023/1542
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs font-semibold text-slate-600">
+                  Huella de Carbono Declarada
                 </span>
-                <strong className="block mt-0.5">
-                  {submodels.recycler_chemistry.hazardous_substances.join(' · ')}
-                </strong>
+                <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800">
+                  {carbon.performance_class}
+                </span>
+              </div>
+              <p className="text-2xl font-extrabold text-slate-900">
+                {carbon.carbon_footprint_kg_kwh}{" "}
+                <span className="text-xs font-normal text-slate-500">kg CO₂e/kWh</span>
+              </p>
+              <div className="space-y-1.5 pt-1">
+                {carbon.lifecycle_breakdown.map((item, i) => (
+                  <div key={i} className="text-xs">
+                    <div className="flex justify-between text-slate-600 mb-0.5">
+                      <span>{item.stage}</span>
+                      <span className="font-semibold">{item.share}%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-baidata-purple rounded-full"
+                        style={{ width: `${item.share}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <FederatedSourceFooter
-              source={submodels.recycler_chemistry.source_node}
-              aasId={submodels.recycler_chemistry.aas_submodel_id}
-            />
-          </section>
-        )}
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
+              <p className="text-xs font-semibold text-slate-600">
+                Contenido Reciclado Certificado (vs. Meta UE 2031)
+              </p>
+              <div className="space-y-2.5">
+                {carbon.recycled_content.map((mat, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-2.5 rounded-lg bg-white border border-slate-200/70 text-xs"
+                  >
+                    <span className="font-medium text-slate-800">{mat.material}</span>
+                    <div className="text-right">
+                      <span className="font-extrabold text-baidata-purple text-sm">
+                        {mat.actual}%
+                      </span>
+                      <span className="text-[11px] text-slate-400 ml-1.5">
+                        (Meta: {mat.target_2031}%)
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
 
-        {/* TARJETA 6: CONFORMIDAD REGULATORIA (SOLO AUTORIDAD B2G) */}
-        {role === 'authority' && (
-          <section className="bg-white rounded-2xl border-2 border-baidata-purple/50 p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <Landmark className="w-4 h-4 text-baidata-purple" />
-              <span className="text-xs font-bold text-baidata-purple">
-                Documentación de Conformidad UE · Anexo XIII.3 (Acceso B2G)
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs text-slate-600">
+            <strong className="text-slate-800">Instrucciones de fin de vida: </strong>
+            {carbon.end_of_life_info}
+          </div>
+        </section>
+
+        {/* SECCIÓN PÚBLICA / AUDITORÍA: Conformidad Regulatoria UE */}
+        <section className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-sky-50 text-sky-700">
+                <FileText className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-900">
+                  Declaración UE de Conformidad y Normativa
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Ref: {compliance.eu_declaration_id} · Organismo: {compliance.notified_body}
+                </p>
+              </div>
+            </div>
+            {role === "authority" && (
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-sky-100 text-sky-800">
+                Sello eIDAS Verificado · {compliance.audit_date}
               </span>
-            </div>
+            )}
+          </div>
 
-            <div className="grid sm:grid-cols-2 gap-3 text-xs">
-              <div className="p-3 bg-baidata-lavenderSoft/60 rounded-xl">
-                <span className="text-slate-500 block">Declaración UE de Conformidad</span>
-                <strong className="font-mono text-baidata-ink">
-                  {submodels.regulatory_compliance.eu_declaration_id}
-                </strong>
-              </div>
-              <div className="p-3 bg-baidata-lavenderSoft/60 rounded-xl">
-                <span className="text-slate-500 block">Organismo Notificado</span>
-                <strong className="text-baidata-ink">
-                  {submodels.regulatory_compliance.notified_body}
-                </strong>
-              </div>
-            </div>
+          <div className="flex flex-wrap gap-2">
+            {compliance.standards_applied.map((std, idx) => (
+              <span
+                key={idx}
+                className="px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700"
+              >
+                {std}
+              </span>
+            ))}
+          </div>
 
-            <FederatedSourceFooter
-              source={submodels.regulatory_compliance.source_node}
-              aasId={submodels.regulatory_compliance.aas_submodel_id}
-            />
-          </section>
-        )}
+          {!activeCredential && (
+            <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500">
+              <span className="inline-flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-slate-400" />
+                Los submodelos de telemetría BMS, despiece y química confidencial requieren credencial verificable.
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsWalletOpen(true)}
+                className="text-baidata-purple font-semibold hover:underline self-start sm:self-center shrink-0"
+              >
+                Presentar credencial →
+              </button>
+            </div>
+          )}
+        </section>
       </main>
 
-      {/* PIE INSTITUCIONAL */}
-      <footer className="max-w-3xl w-full mx-auto px-4 mt-10 text-center text-[11px] text-slate-500">
-        Recursos, formación y comunidad para acelerar la adopción de estándares y buenas prácticas
-        en espacios de datos ·{' '}
-        <a
-          href="https://baidata.eu"
-          target="_blank"
-          rel="noreferrer"
-          className="text-baidata-purple font-bold hover:underline"
-        >
-          baidata.eu
-        </a>
+      {/* Pie de página discreto con acceso técnico M2M para demostraciones */}
+      <footer className="border-t border-slate-200 bg-white mt-12">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+          <p>
+            Infraestructura de Espacios de Datos Soberanos ·{" "}
+            <strong className="text-slate-700">BAIDATA</strong> (IDSA Hub España)
+          </p>
+          <button
+            type="button"
+            onClick={() => setIsTraceOpen(true)}
+            className="inline-flex items-center gap-1.5 text-slate-500 hover:text-baidata-purple font-mono text-[11px] transition"
+          >
+            <Server className="w-3.5 h-3.5" />
+            <span>Inspeccionar API AAS / Traza Nodo EDC</span>
+          </button>
+        </div>
       </footer>
 
-      {/* MODALES */}
-      <OwnerAuthModal
-        isOpen={showOwnerModal}
-        onClose={() => setShowOwnerModal(false)}
-        onAuthenticated={handleOwnerAuthenticated}
+      <WalletAuthModal
+        isOpen={isWalletOpen}
+        onClose={() => setIsWalletOpen(false)}
+        onAuthenticate={(cred) => setActiveCredential(cred)}
       />
 
       <EdcTraceModal
-        isOpen={showTraceModal}
-        onClose={() => setShowTraceModal(false)}
-        role={role}
-        data={dppData}
+        isOpen={isTraceOpen}
+        onClose={() => setIsTraceOpen(false)}
+        dppData={dppData}
+        activeCredential={activeCredential}
       />
-    </div>
-  );
-}
-
-function FederatedSourceFooter({ source, aasId }) {
-  return (
-    <div className="mt-4 pt-2.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px] text-slate-400">
-      <div className="flex items-center gap-1.5">
-        <Server className="w-3 h-3 text-baidata-purple shrink-0" />
-        <span>
-          Origen federado: <strong className="font-semibold text-slate-600">{source}</strong>
-        </span>
-      </div>
-      <span className="font-mono text-[10px] text-slate-400 truncate">{aasId}</span>
     </div>
   );
 }
