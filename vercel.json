@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/aas/:path*",
+      "destination": "http://158.158.54.56:8081/:path*"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import dppData from "./data/batteryDpp.json";
+import fallbackDppData from "./data/batteryDpp.json";
+import { fetchBatteryDpp } from "./services/aasClient";
 import BaidataHeader from "./components/BaidataHeader";
 import WalletAuthModal from "./components/WalletAuthModal";
 import EdcTraceModal from "./components/EdcTraceModal";
@@ -26,13 +27,22 @@ import {
 } from "lucide-react";
 
 export default function App() {
+  const [dppData, setDppData] = useState(fallbackDppData);
+  const [aasSource, setAasSource] = useState("connecting");
   const [activeCredential, setActiveCredential] = useState(null);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isTraceOpen, setIsTraceOpen] = useState(false);
   const [isRepurposed, setIsRepurposed] = useState(false);
   const [serviceLogs, setServiceLogs] = useState(
-    dppData.submodels.workshop_repair.service_log
+    fallbackDppData.submodels.workshop_repair.service_log
   );
+
+  useEffect(() => {
+    fetchBatteryDpp().then(({ data, source }) => {
+      setDppData(data);
+      setAasSource(source);
+    });
+  }, []);
 
   const role = activeCredential?.id || "public";
   const canViewBms = ["owner", "workshop", "authority"].includes(role);
@@ -141,6 +151,24 @@ export default function App() {
                 </span>
                 <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md">
                   ID: {dppData.battery_id}
+                </span>
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
+                    aasSource === "basyx"
+                      ? "bg-sky-50 text-sky-700 border-sky-200"
+                      : "bg-slate-100 text-slate-600 border-slate-200"
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      aasSource === "basyx" ? "bg-sky-500 animate-pulse" : "bg-slate-400"
+                    }`}
+                  />
+                  {aasSource === "basyx"
+                    ? "AAS En Vivo · Azure BaSyx"
+                    : aasSource === "connecting"
+                    ? "Conectando AAS..."
+                    : "Modo Respaldo Local"}
                 </span>
               </div>
 
