@@ -9,6 +9,7 @@ import {
   Scale,
   ArrowRight,
   CheckCircle2,
+  Factory
 } from "lucide-react";
 
 const WALLET_CREDENTIALS = [
@@ -59,6 +60,8 @@ const WALLET_CREDENTIALS = [
     did: "did:web:iberiavolt.es:oem-master",
     policyGranted: "Política ODRL: Full-Access-All-Submodels (BMS + Repair + Chemistry + B2G)",
     description: "Vista completa de fabricante con acceso simultáneo a todos los submodelos públicos y restringidos.",
+    icon: Factory,
+    accent: "text-sky-700 bg-sky-50 border-sky-200",
   },
 ];
 
