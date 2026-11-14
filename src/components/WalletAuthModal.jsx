@@ -52,6 +52,14 @@ const WALLET_CREDENTIALS = [
     icon: Scale,
     accent: "text-sky-700 bg-sky-50 border-sky-200",
   },
+  {
+    id: "oem",
+    roleLabel: "Fabricante OEM (Acceso Total · Auditoría Interna)",
+    holderName: "IberiaVolt Mobility S.L. (OEM Master)",
+    did: "did:web:iberiavolt.es:oem-master",
+    policyGranted: "Política ODRL: Full-Access-All-Submodels (BMS + Repair + Chemistry + B2G)",
+    description: "Vista completa de fabricante con acceso simultáneo a todos los submodelos públicos y restringidos.",
+  },
 ];
 
 export default function WalletAuthModal({ isOpen, onClose, onAuthenticate }) {

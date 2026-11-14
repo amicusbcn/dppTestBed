@@ -8,7 +8,6 @@ const AAS_BASE_URL =
     ? "/api/aas"
     : RAW_AAS_URL;
 
-// Extrae texto priorizando el idioma activo (es, eu, ca, en) con respaldo automático
 function getTextVal(el, lang = "es", fallback = undefined) {
   if (!el || el.value === undefined || el.value === null) return fallback;
   if (typeof el.value === "string") return el.value !== "" ? el.value : fallback;
@@ -94,10 +93,11 @@ export async function fetchBatteryDpp(lang = "es") {
     const smCond = submodels.find((s) => s.idShort === "ProductCondition");
     const smMat = submodels.find((s) => s.idShort === "MaterialComposition");
     const smCirc = submodels.find((s) => s.idShort === "Circularity");
+    const smDue = submodels.find((s) => s.idShort === "SupplyChainDueDiligence");
 
     const mapped = structuredClone(fallbackData);
 
-    // 1. NAMEPLATE (IDTA 02006 / 02035-1)
+    // 1. NAMEPLATE
     if (smNameplate?.submodelElements) {
       const els = smNameplate.submodelElements;
       const mfgName = getTextVal(findEl(els, "ManufacturerName"), lang);
@@ -137,7 +137,7 @@ export async function fetchBatteryDpp(lang = "es") {
       }
     }
 
-    // 2. TECHNICAL DATA (IDTA 02035-4)
+    // 2. TECHNICAL DATA
     if (smTech?.submodelElements) {
       const genInfo = findEl(smTech.submodelElements, "GeneralInformation")?.value || [];
       const opName = getTextVal(findEl(genInfo, "ManufacturerName"), lang);
@@ -248,7 +248,7 @@ export async function fetchBatteryDpp(lang = "es") {
       }
     }
 
-    // 3. PRODUCT CONDITION - TELEMETRÍA BMS (IDTA 02035-5)
+    // 3. PRODUCT CONDITION (BMS)
     if (smCond?.submodelElements) {
       const els = smCond.submodelElements;
       const sohCol = findEl(els, "StateOfCertifiedEnergy")?.value || [];
@@ -325,7 +325,7 @@ export async function fetchBatteryDpp(lang = "es") {
       }
     }
 
-    // 4. CARBON FOOTPRINT (IDTA 02023 / 02035-3) + DESGLOSE DINÁMICO MULTILINGÜE
+    // 4. CARBON FOOTPRINT + DESGLOSE DINÁMICO MULTILINGÜE
     if (smCarbon?.submodelElements) {
       const pcfList = findEl(smCarbon.submodelElements, "ProductCarbonFootprints")?.value || [];
       const pcfItem = pcfList[0]?.value || [];
@@ -341,7 +341,13 @@ export async function fetchBatteryDpp(lang = "es") {
         mark("carbon.performance_class");
       }
 
-      const breakdownCol = findEl(pcfItem, "LifecycleBreakdown")?.value || [];
+      // Buscar LifecycleBreakdown tanto dentro de ProductCarbonFootprints como en pcfItem o raíz
+      const breakdownCol =
+        findEl(pcfList, "LifecycleBreakdown")?.value ||
+        findEl(pcfItem, "LifecycleBreakdown")?.value ||
+        findEl(smCarbon.submodelElements, "LifecycleBreakdown")?.value ||
+        [];
+
       if (breakdownCol.length > 0) {
         const parsedStages = breakdownCol
           .map((stageCol) => {
@@ -360,7 +366,7 @@ export async function fetchBatteryDpp(lang = "es") {
       }
     }
 
-    // 5. MATERIAL COMPOSITION (IDTA 02035-6)
+    // 5. MATERIAL COMPOSITION
     if (smMat?.submodelElements) {
       const els = smMat.submodelElements;
       const chemCol = findEl(els, "BatteryChemistry")?.value || [];
@@ -427,7 +433,7 @@ export async function fetchBatteryDpp(lang = "es") {
       mark("chemistry.source_node");
     }
 
-    // 6. CIRCULARITY (IDTA 02035-7)
+    // 6. CIRCULARITY
     if (smCirc?.submodelElements) {
       const els = smCirc.submodelElements;
 
@@ -525,7 +531,7 @@ export async function fetchBatteryDpp(lang = "es") {
       }
     }
 
-    // 7. HANDOVER DOCUMENTATION (IDTA 02004 / 02035-2)
+    // 7. HANDOVER DOCUMENTATION
     if (smDocs?.submodelElements) {
       const docsList = findEl(smDocs.submodelElements, "Documents")?.value || [];
       const parsedDocs = [];
@@ -558,7 +564,6 @@ export async function fetchBatteryDpp(lang = "es") {
         mark(`docs.${idx}.title`);
         mark(`docs.${idx}.version`);
 
-        // Documento 1: Declaración UE de Conformidad
         if (classId === "03-01" || idx === 0) {
           if (docId && docId !== "123-ABC-789") {
             mapped.submodels.regulatory_compliance.eu_declaration_id = docId;
@@ -585,7 +590,6 @@ export async function fetchBatteryDpp(lang = "es") {
           }
         }
 
-        // Documento 2: Manual de Despiece y Reparación
         if ((classId === "04-01" || idx === 1) && docId && docId !== "123-ABC-789") {
           mapped.submodels.workshop_repair.disassembly_manual = docId;
           mark("repair.disassembly_manual");
@@ -594,6 +598,61 @@ export async function fetchBatteryDpp(lang = "es") {
 
       if (parsedDocs.length > 0) {
         mapped.submodels.handover_documentation = parsedDocs;
+      }
+    }
+
+    // 8. SUPPLY CHAIN DUE DILIGENCE (Art. 48)
+    if (smDue?.submodelElements) {
+      const els = smDue.submodelElements;
+      const certId = getPropVal(els, "CertificateId");
+      if (certId) {
+        mapped.submodels.supply_chain_due_diligence.public_attestation.certificate_id = certId;
+        mark("dd.certificate_id");
+      }
+      const status = getTextVal(findEl(els, "Status"), lang);
+      if (status) {
+        mapped.submodels.supply_chain_due_diligence.public_attestation.status = status;
+        mark("dd.status");
+      }
+      const auditor = getPropVal(els, "Auditor");
+      if (auditor) {
+        mapped.submodels.supply_chain_due_diligence.public_attestation.auditor = auditor;
+        mark("dd.auditor");
+      }
+      const auditDate = getPropVal(els, "AuditDate");
+      if (auditDate) {
+        mapped.submodels.supply_chain_due_diligence.public_attestation.audit_date = auditDate;
+        mark("dd.audit_date");
+      }
+      const summary = getTextVal(findEl(els, "Summary"), lang);
+      if (summary) {
+        mapped.submodels.supply_chain_due_diligence.public_attestation.summary = summary;
+        mark("dd.summary");
+      }
+      const mineralsStr = getTextVal(findEl(els, "CoveredMinerals"), lang);
+      if (mineralsStr) {
+        mapped.submodels.supply_chain_due_diligence.public_attestation.covered_minerals =
+          mineralsStr
+            .split(",")
+            .map((m) => m.trim())
+            .filter(Boolean);
+        mark("dd.covered_minerals");
+      }
+
+      const tierList = findEl(els, "RestrictedTierTraceability")?.value || [];
+      if (tierList.length > 0) {
+        mapped.submodels.supply_chain_due_diligence.restricted_tier_traceability = tierList.map(
+          (batchCol) => {
+            const bEls = batchCol.value || [];
+            return {
+              mineral: getPropVal(bEls, "Mineral", "Material"),
+              origin: getPropVal(bEls, "Origin", "-"),
+              refiner: getPropVal(bEls, "Refiner", "-"),
+              batch_vc: getPropVal(bEls, "BatchVC", "-"),
+            };
+          }
+        );
+        mark("dd.restricted_tier_traceability");
       }
     }
 
