@@ -8,11 +8,13 @@ const AAS_BASE_URL =
     ? "/api/aas"
     : RAW_AAS_URL;
 
-// Extrae texto tanto de MultiLanguageProperty como de Property simple
-function getTextVal(el, fallback = undefined) {
+// Extrae texto priorizando el idioma activo (es, eu, ca, en) con respaldo automático
+function getTextVal(el, lang = "es", fallback = undefined) {
   if (!el || el.value === undefined || el.value === null) return fallback;
   if (typeof el.value === "string") return el.value !== "" ? el.value : fallback;
   if (Array.isArray(el.value) && el.value.length > 0) {
+    const preferred = el.value.find((v) => v.language === lang);
+    if (preferred?.text) return preferred.text;
     const es = el.value.find((v) => v.language === "es");
     if (es?.text) return es.text;
     const en = el.value.find((v) => v.language === "en");
@@ -64,7 +66,7 @@ const MATERIAL_LABELS_ES = {
   nickel: "Níquel (Ni)",
 };
 
-export async function fetchBatteryDpp() {
+export async function fetchBatteryDpp(lang = "es") {
   if (!AAS_BASE_URL) {
     return { data: fallbackData, source: "local", mappedFields: [] };
   }
@@ -98,12 +100,12 @@ export async function fetchBatteryDpp() {
     // 1. NAMEPLATE (IDTA 02006 / 02035-1)
     if (smNameplate?.submodelElements) {
       const els = smNameplate.submodelElements;
-      const mfgName = getTextVal(findEl(els, "ManufacturerName"));
+      const mfgName = getTextVal(findEl(els, "ManufacturerName"), lang);
       if (mfgName) {
         mapped.submodels.public_nameplate.manufacturer = mfgName;
         mark("nameplate.manufacturer");
       }
-      const prodName = getTextVal(findEl(els, "ManufacturerProductDesignation"));
+      const prodName = getTextVal(findEl(els, "ManufacturerProductDesignation"), lang);
       if (prodName) {
         mapped.submodels.public_nameplate.product_name = prodName;
         mark("nameplate.product_name");
@@ -123,12 +125,22 @@ export async function fetchBatteryDpp() {
         mapped.submodels.public_nameplate.manufacturing_plant = `Planta de Ensamblaje (${country})`;
         mark("nameplate.manufacturing_plant");
       }
+      const opRole = getTextVal(findEl(els, "OperatorRole"), lang);
+      if (opRole) {
+        mapped.responsible_operator.role = opRole;
+        mark("responsible_operator.role");
+      }
+      const heavyMetals = getTextVal(findEl(els, "HeavyMetalsDeclaration"), lang);
+      if (heavyMetals) {
+        mapped.submodels.public_nameplate.heavy_metals_declaration = heavyMetals;
+        mark("nameplate.heavy_metals_declaration");
+      }
     }
 
     // 2. TECHNICAL DATA (IDTA 02035-4)
     if (smTech?.submodelElements) {
       const genInfo = findEl(smTech.submodelElements, "GeneralInformation")?.value || [];
-      const opName = getTextVal(findEl(genInfo, "ManufacturerName"));
+      const opName = getTextVal(findEl(genInfo, "ManufacturerName"), lang);
       if (opName) {
         mapped.responsible_operator.name = opName;
         mark("responsible_operator.name");
@@ -155,11 +167,22 @@ export async function fetchBatteryDpp() {
       const efficiency = findEl(techAreas, "RoundTripEnergyEfficiency")?.value || [];
       const resistance = findEl(techAreas, "Resistance")?.value || [];
       const lifetime = findEl(techAreas, "Lifetime")?.value || [];
+      const temp = findEl(techAreas, "Temperature")?.value || [];
 
       const nomV = getPropVal(capVolt, "NominalVoltage");
       if (nomV !== undefined) {
         mapped.submodels.public_nameplate.nominal_voltage_v = nomV;
         mark("nameplate.nominal_voltage_v");
+      }
+      const minV = getPropVal(capVolt, "MinVoltage");
+      if (minV !== undefined) {
+        mapped.submodels.performance_durability.volt_min = minV;
+        mark("performance.volt_min");
+      }
+      const maxV = getPropVal(capVolt, "MaxVoltage");
+      if (maxV !== undefined) {
+        mapped.submodels.performance_durability.volt_max = maxV;
+        mark("performance.volt_max");
       }
       const ratedAh = getPropVal(capVolt, "RatedCapacity");
       if (ratedAh !== undefined) {
@@ -197,6 +220,17 @@ export async function fetchBatteryDpp() {
         mark("performance.round_trip_efficiency_50pct_life_pct");
       }
 
+      const tMin = getPropVal(temp, "TemperatureRangeIdleState_LowerBoundary");
+      if (tMin !== undefined) {
+        mapped.submodels.performance_durability.temp_min = tMin;
+        mark("performance.temp_min");
+      }
+      const tMax = getPropVal(temp, "TemperatureRangeIdleState_UpperBoundary");
+      if (tMax !== undefined) {
+        mapped.submodels.performance_durability.temp_max = tMax;
+        mark("performance.temp_max");
+      }
+
       const cycles = getPropVal(lifetime, "ExpectedNumberOfCycles");
       if (cycles !== undefined) {
         mapped.submodels.performance_durability.expected_lifetime_cycles = cycles;
@@ -220,6 +254,11 @@ export async function fetchBatteryDpp() {
       const sohCol = findEl(els, "StateOfCertifiedEnergy")?.value || [];
       const cyclesCol = findEl(els, "NumberOfFullCycles")?.value || [];
       const remEnergyCol = findEl(els, "RemainingEnergy")?.value || [];
+      const energyThruCol = findEl(els, "EnergyThroughput")?.value || [];
+      const capThruCol = findEl(els, "CapacityThroughput")?.value || [];
+      const remEffCol = findEl(els, "RemainingRoundTripEnergyEfficiency")?.value || [];
+      const remPowCol = findEl(els, "RemainingPowerCapability")?.value || [];
+      const remPowDynCol = findEl(remPowCol, "RemainingPowerCapabilityDynamicAt")?.value || [];
 
       const soh = getPropVal(sohCol, "StateOfCertifiedEnergyValue");
       if (soh !== undefined) {
@@ -235,6 +274,26 @@ export async function fetchBatteryDpp() {
       if (remWh !== undefined) {
         mapped.submodels.dynamic_bms.remaining_capacity_wh = remWh;
         mark("bms.remaining_capacity_wh");
+      }
+      const remPow = getPropVal(remPowDynCol, "PowerCapabilityAt");
+      if (remPow !== undefined) {
+        mapped.submodels.dynamic_bms.remaining_power_w = remPow;
+        mark("bms.remaining_power_w");
+      }
+      const remEff = getPropVal(remEffCol, "RemainingRoundTripEnergyEfficiencyValue");
+      if (remEff !== undefined) {
+        mapped.submodels.dynamic_bms.remaining_efficiency_pct = remEff;
+        mark("bms.remaining_efficiency_pct");
+      }
+      const eThru = getPropVal(energyThruCol, "EnergyThroughputValue");
+      if (eThru !== undefined) {
+        mapped.submodels.dynamic_bms.energy_throughput_wh = eThru;
+        mark("bms.energy_throughput_wh");
+      }
+      const cThru = getPropVal(capThruCol, "CapacityThroughputValue");
+      if (cThru !== undefined) {
+        mapped.submodels.dynamic_bms.capacity_throughput_ah = cThru;
+        mark("bms.capacity_throughput_ah");
       }
       const lastSync = getPropVal(sohCol, "LastUpdate");
       if (lastSync) {
@@ -266,10 +325,11 @@ export async function fetchBatteryDpp() {
       }
     }
 
-    // 4. CARBON FOOTPRINT (IDTA 02023 / 02035-3)
+    // 4. CARBON FOOTPRINT (IDTA 02023 / 02035-3) + DESGLOSE DINÁMICO MULTILINGÜE
     if (smCarbon?.submodelElements) {
       const pcfList = findEl(smCarbon.submodelElements, "ProductCarbonFootprints")?.value || [];
       const pcfItem = pcfList[0]?.value || [];
+
       const co2 = getPropVal(pcfItem, "PcfCO2eq");
       if (co2 !== undefined) {
         mapped.submodels.carbon_circularity.carbon_footprint_kg_kwh = co2;
@@ -280,11 +340,30 @@ export async function fetchBatteryDpp() {
         mapped.submodels.carbon_circularity.performance_class = perfClass;
         mark("carbon.performance_class");
       }
+
+      const breakdownCol = findEl(pcfItem, "LifecycleBreakdown")?.value || [];
+      if (breakdownCol.length > 0) {
+        const parsedStages = breakdownCol
+          .map((stageCol) => {
+            const sEls = stageCol.value || [];
+            const stage = getTextVal(findEl(sEls, "stageName"), lang);
+            const share = getPropVal(sEls, "PCFValue");
+            if (!stage || share === undefined) return null;
+            return { stage, share };
+          })
+          .filter(Boolean);
+
+        if (parsedStages.length > 0) {
+          mapped.submodels.carbon_circularity.lifecycle_breakdown = parsedStages;
+          mark("carbon.lifecycle_breakdown");
+        }
+      }
     }
 
     // 5. MATERIAL COMPOSITION (IDTA 02035-6)
     if (smMat?.submodelElements) {
-      const chemCol = findEl(smMat.submodelElements, "BatteryChemistry")?.value || [];
+      const els = smMat.submodelElements;
+      const chemCol = findEl(els, "BatteryChemistry")?.value || [];
       const shortChem = getPropVal(chemCol, "ShortName");
       const clearChem = getPropVal(chemCol, "ClearName");
       if (shortChem) {
@@ -292,23 +371,43 @@ export async function fetchBatteryDpp() {
         mark("nameplate.chemistry");
       }
 
-      const materialsList = findEl(smMat.submodelElements, "BatteryMaterials")?.value || [];
-      if (materialsList.length > 0) {
-        const crmSummary = materialsList
-          .map((m) => {
-            const mEls = m.value || [];
-            const name = getPropVal(mEls, "BatteryMaterialName");
-            const mass = getPropVal(mEls, "BatteryMaterialMass");
-            return name && mass !== undefined ? `${name}: ${mass} g` : name;
-          })
-          .filter(Boolean)
-          .join(" · ");
-
-        mapped.submodels.recycler_chemistry.cathode = `${clearChem || shortChem || "NMC 811"} (${crmSummary})`;
-        mark("chemistry.cathode");
+      const neutralization = getTextVal(findEl(els, "SafetyNeutralization"), lang);
+      if (neutralization) {
+        mapped.submodels.recycler_chemistry.safety_neutralization = neutralization;
+        mark("chemistry.safety_neutralization");
       }
 
-      const hazList = findEl(smMat.submodelElements, "HazardousSubstances")?.value || [];
+      const materialsList = findEl(els, "BatteryMaterials")?.value || [];
+      if (materialsList.length > 0) {
+        const byLocation = { cathode: [], anode: [], electrolyte: [] };
+        for (const m of materialsList) {
+          const mEls = m.value || [];
+          const name = getPropVal(mEls, "BatteryMaterialName");
+          const mass = getPropVal(mEls, "BatteryMaterialMass");
+          const locCol = findEl(mEls, "BatteryMaterialLocation")?.value || [];
+          const loc = (getPropVal(locCol, "ComponentName", "Cathode") || "").toLowerCase();
+          const label = name && mass !== undefined ? `${name}: ${mass} g` : name;
+          if (!label) continue;
+          if (loc.includes("anode")) byLocation.anode.push(label);
+          else if (loc.includes("electrolyte")) byLocation.electrolyte.push(label);
+          else byLocation.cathode.push(label);
+        }
+
+        if (byLocation.cathode.length > 0) {
+          mapped.submodels.recycler_chemistry.cathode = `${clearChem || shortChem || "NMC 811"} (${byLocation.cathode.join(" · ")})`;
+          mark("chemistry.cathode");
+        }
+        if (byLocation.anode.length > 0) {
+          mapped.submodels.recycler_chemistry.anode = byLocation.anode.join(" · ");
+          mark("chemistry.anode");
+        }
+        if (byLocation.electrolyte.length > 0) {
+          mapped.submodels.recycler_chemistry.electrolyte = byLocation.electrolyte.join(" · ");
+          mark("chemistry.electrolyte");
+        }
+      }
+
+      const hazList = findEl(els, "HazardousSubstances")?.value || [];
       if (hazList.length > 0) {
         mapped.submodels.recycler_chemistry.hazardous_substances = hazList.map((h) => {
           const hEls = h.value || [];
@@ -331,6 +430,19 @@ export async function fetchBatteryDpp() {
     // 6. CIRCULARITY (IDTA 02035-7)
     if (smCirc?.submodelElements) {
       const els = smCirc.submodelElements;
+
+      const renewable = getPropVal(els, "RenewableContent");
+      if (renewable !== undefined) {
+        mapped.submodels.carbon_circularity.renewable_content = renewable;
+        mark("carbon.renewable_content");
+      }
+
+      const cellArch = getTextVal(findEl(els, "CellArchitecture"), lang);
+      if (cellArch) {
+        mapped.submodels.workshop_repair.cell_architecture = cellArch;
+        mark("repair.cell_architecture");
+      }
+
       const safetyCol = findEl(els, "SafetyMeasures")?.value || [];
       const extList = findEl(safetyCol, "ExtinguishingAgents")?.value || [];
       const agents = extList.map((item) => item.value).filter(Boolean);
@@ -363,6 +475,18 @@ export async function fetchBatteryDpp() {
       const extractedParts = [];
       for (const supplier of sparesList) {
         const sEls = supplier.value || [];
+        const webAddr = getPropVal(sEls, "SupplierWebAddress");
+        if (webAddr) {
+          mapped.submodels.workshop_repair.supplier_web = webAddr;
+          mark("repair.supplier_web");
+        }
+        const emailCol = findEl(sEls, "EmailAddressOfSupplier")?.value || [];
+        const emailAddr = getPropVal(emailCol, "EmailAddress");
+        if (emailAddr) {
+          mapped.submodels.workshop_repair.supplier_email = emailAddr;
+          mark("repair.supplier_email");
+        }
+
         const comps = findEl(sEls, "Components")?.value || [];
         for (const comp of comps) {
           const cEls = comp.value || [];
@@ -404,29 +528,73 @@ export async function fetchBatteryDpp() {
     // 7. HANDOVER DOCUMENTATION (IDTA 02004 / 02035-2)
     if (smDocs?.submodelElements) {
       const docsList = findEl(smDocs.submodelElements, "Documents")?.value || [];
+      const parsedDocs = [];
+
       docsList.forEach((doc, idx) => {
         const dEls = doc.value || [];
         const idCol = findEl(dEls, "DocumentIds")?.value?.[0]?.value || [];
         const classCol = findEl(dEls, "DocumentClassifications")?.value?.[0]?.value || [];
         const verCol = findEl(dEls, "DocumentVersions")?.value?.[0]?.value || [];
+        const fileEl = findEl(verCol, "DigitalFiles")?.value?.[0];
 
-        const classId = getPropVal(classCol, "ClassId", "");
-        const docId = getPropVal(idCol, "DocumentIdentifier", "");
+        const classId = getPropVal(classCol, "ClassId", idx === 0 ? "03-01" : "04-01");
+        const docId = getPropVal(idCol, "DocumentIdentifier", `DOC-${idx + 1}`);
+        const title = getTextVal(findEl(verCol, "Title"), lang, "Documento técnico");
+        const version = getPropVal(verCol, "Version", "1.0");
         const statusDate = getPropVal(verCol, "StatusSetDate", "");
+        const orgName =
+          getPropVal(verCol, "OrganizationOfficialName") ||
+          getPropVal(verCol, "OrganizationShortName");
+        const docDesc = getTextVal(findEl(verCol, "Description"), lang, "");
 
-        if ((classId === "03-01" || idx === 0) && docId && docId !== "123-ABC-789") {
-          mapped.submodels.regulatory_compliance.eu_declaration_id = docId;
-          mark("compliance.eu_declaration_id");
+        parsedDocs.push({
+          doc_id: docId,
+          class_id: classId,
+          title,
+          version,
+          file_url: fileEl?.value || "#",
+        });
+        mark(`docs.${idx}.doc_id`);
+        mark(`docs.${idx}.title`);
+        mark(`docs.${idx}.version`);
+
+        // Documento 1: Declaración UE de Conformidad
+        if (classId === "03-01" || idx === 0) {
+          if (docId && docId !== "123-ABC-789") {
+            mapped.submodels.regulatory_compliance.eu_declaration_id = docId;
+            mark("compliance.eu_declaration_id");
+          }
           if (statusDate) {
             mapped.submodels.regulatory_compliance.audit_date = statusDate;
             mark("compliance.audit_date");
           }
+          if (orgName && !orgName.includes("AAS Example")) {
+            mapped.submodels.regulatory_compliance.notified_body = orgName;
+            mark("compliance.notified_body");
+          }
+          if (docDesc) {
+            const cleanList = docDesc.includes(":") ? docDesc.split(":")[1] : docDesc;
+            const standards = cleanList
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean);
+            if (standards.length > 0) {
+              mapped.submodels.regulatory_compliance.standards_applied = standards;
+              mark("compliance.standards_applied");
+            }
+          }
         }
+
+        // Documento 2: Manual de Despiece y Reparación
         if ((classId === "04-01" || idx === 1) && docId && docId !== "123-ABC-789") {
           mapped.submodels.workshop_repair.disassembly_manual = docId;
           mark("repair.disassembly_manual");
         }
       });
+
+      if (parsedDocs.length > 0) {
+        mapped.submodels.handover_documentation = parsedDocs;
+      }
     }
 
     return { data: mapped, source: "basyx", mappedFields: Array.from(mappedFields) };
