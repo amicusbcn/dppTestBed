@@ -24,7 +24,7 @@ import {
   Flame,
   RefreshCw,
   Building2,
-  Download,
+  Download
 } from "lucide-react";
 
 export default function App() {
@@ -62,8 +62,9 @@ export default function App() {
     dynamic_bms: bms,
     workshop_repair: repair,
     recycler_chemistry: chemistry,
+    regulatory_compliance: compliance,
     handover_documentation: docs,
-  } = dppData.submodels;
+  } = dppData.submodels || fallbackDppData.submodels;
 
   const isFromAas = (fieldKey) => aasSource === "basyx" && aasMappedFields.has(fieldKey);
 
@@ -204,13 +205,13 @@ export default function App() {
 
               <div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-                  {hl("nameplate.product_name", nameplate.product_name)}
+                  {hl("nameplate.product_name", nameplate?.product_name)}
                 </h1>
                 <p className="text-sm text-slate-600 mt-1 flex items-center gap-1.5">
                   <Factory className="w-4 h-4 text-slate-400 shrink-0" />
                   <span>
-                    {hl("nameplate.manufacturer", nameplate.manufacturer)} ·{" "}
-                    {hl("nameplate.manufacturing_plant", nameplate.manufacturing_plant)}
+                    {hl("nameplate.manufacturer", nameplate?.manufacturer)} ·{" "}
+                    {hl("nameplate.manufacturing_plant", nameplate?.manufacturing_plant)}
                   </span>
                 </p>
               </div>
@@ -223,20 +224,20 @@ export default function App() {
                   </p>
                   <p className="font-bold text-slate-900 mt-0.5">
                     {isRepurposed
-                      ? currentOperator.name
-                      : hl("responsible_operator.name", currentOperator.name)}{" "}
+                      ? currentOperator?.name
+                      : hl("responsible_operator.name", currentOperator?.name)}{" "}
                     <span className="font-mono font-normal text-slate-500">
                       (
                       {isRepurposed
-                        ? currentOperator.eori_vat
-                        : hl("responsible_operator.eori_vat", currentOperator.eori_vat)}
+                        ? currentOperator?.eori_vat
+                        : hl("responsible_operator.eori_vat", currentOperator?.eori_vat)}
                       )
                     </span>
                   </p>
                   <p className="text-slate-600">
                     {isRepurposed
-                      ? currentOperator.role
-                      : hl("responsible_operator.role", currentOperator.role)}
+                      ? currentOperator?.role
+                      : hl("responsible_operator.role", currentOperator?.role)}
                   </p>
                 </div>
               </div>
@@ -264,11 +265,11 @@ export default function App() {
                 Capacidad Nominal
               </p>
               <p className="text-xl font-extrabold text-slate-900 mt-1">
-                {hl("nameplate.nominal_capacity_wh", nameplate.nominal_capacity_wh, " Wh")}
+                {hl("nameplate.nominal_capacity_wh", nameplate?.nominal_capacity_wh, " Wh")}
               </p>
               <p className="text-xs text-slate-600 mt-0.5">
-                {hl("nameplate.rated_capacity_ah", nameplate.rated_capacity_ah, " Ah")} ·{" "}
-                {hl("nameplate.nominal_voltage_v", nameplate.nominal_voltage_v, "V")}
+                {hl("nameplate.rated_capacity_ah", nameplate?.rated_capacity_ah, " Ah")} ·{" "}
+                {hl("nameplate.nominal_voltage_v", nameplate?.nominal_voltage_v, "V")}
               </p>
             </div>
 
@@ -277,7 +278,7 @@ export default function App() {
                 Química de celda
               </p>
               <p className="text-sm font-bold text-slate-900 mt-1">
-                {hl("nameplate.chemistry", nameplate.chemistry)}
+                {hl("nameplate.chemistry", nameplate?.chemistry)}
               </p>
             </div>
 
@@ -286,8 +287,8 @@ export default function App() {
                 Fabricación y Masa
               </p>
               <p className="text-sm font-bold text-slate-900 mt-1">
-                {hl("nameplate.manufacturing_date", nameplate.manufacturing_date)} ·{" "}
-                {hl("nameplate.weight_kg", nameplate.weight_kg, " kg")}
+                {hl("nameplate.manufacturing_date", nameplate?.manufacturing_date)} ·{" "}
+                {hl("nameplate.weight_kg", nameplate?.weight_kg, " kg")}
               </p>
             </div>
 
@@ -298,7 +299,7 @@ export default function App() {
               <p className="text-sm font-bold text-slate-900 mt-1">
                 {isRepurposed
                   ? "Almacenamiento Estacionario (SB)"
-                  : hl("nameplate.battery_category", nameplate.battery_category)}
+                  : hl("nameplate.battery_category", nameplate?.battery_category)}
               </p>
             </div>
           </div>
@@ -311,18 +312,16 @@ export default function App() {
                 <span className="text-amber-800">
                   {hl(
                     "nameplate.extinguishing_agents",
-                    nameplate.extinguishing_agents?.join(" · ") || ""
+                    nameplate?.extinguishing_agents?.join(" · ") || ""
                   )}
                 </span>
               </div>
             </div>
-
+            
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col justify-center">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase">
-                Declaración metales pesados
-              </span>
+              <span className="text-[11px] font-semibold text-slate-500 uppercase">Declaración metales pesados</span>
               <span className="font-medium text-slate-700 mt-0.5">
-                {hl("nameplate.heavy_metals_declaration", nameplate.heavy_metals_declaration)}
+                {hl("nameplate.heavy_metals_declaration", nameplate?.heavy_metals_declaration)}
               </span>
             </div>
           </div>
@@ -340,7 +339,7 @@ export default function App() {
                   <h2 className="text-base font-bold text-slate-900">
                     Estado de Salud y Telemetría Dinámica BMS
                   </h2>
-                  <p className="text-xs text-slate-500">{hl("bms.last_sync", bms.last_sync)}</p>
+                  <p className="text-xs text-slate-500">{hl("bms.last_sync", bms?.last_sync)}</p>
                 </div>
               </div>
               <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-baidata-lavenderSoft text-baidata-purple">
@@ -352,11 +351,11 @@ export default function App() {
               <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200">
                 <p className="text-xs font-medium text-emerald-800">Estado de Salud (SoH)</p>
                 <p className="text-2xl font-extrabold text-emerald-900 mt-1">
-                  {hl("bms.state_of_health_soh", bms.state_of_health_soh, "%")}
+                  {hl("bms.state_of_health_soh", bms?.state_of_health_soh, "%")}
                 </p>
                 <p className="text-[11px] text-emerald-700 mt-0.5">
                   Capacidad útil:{" "}
-                  {hl("bms.remaining_capacity_wh", bms.remaining_capacity_wh, " Wh")}
+                  {hl("bms.remaining_capacity_wh", bms?.remaining_capacity_wh, " Wh")}
                 </p>
               </div>
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
@@ -364,22 +363,22 @@ export default function App() {
                   Ciclos y Resistencia Actual
                 </p>
                 <p className="text-2xl font-extrabold text-slate-900 mt-1">
-                  {hl("bms.charge_cycles", bms.charge_cycles)}{" "}
+                  {hl("bms.charge_cycles", bms?.charge_cycles)}{" "}
                   <span className="text-xs font-normal text-slate-500">ciclos</span>
                 </p>
                 <p className="text-[11px] text-slate-600 mt-0.5">
-                  Resistencia interna:{" "}
+                  Resistencia interna BMS:{" "}
                   <strong>
                     {hl(
                       "performance.internal_resistance_current_mohm",
-                      performance.internal_resistance_current_mohm,
+                      performance?.internal_resistance_current_mohm,
                       " mΩ"
                     )}
                   </strong>{" "}
                   (Inicial:{" "}
                   {hl(
                     "performance.internal_resistance_initial_mohm",
-                    performance.internal_resistance_initial_mohm,
+                    performance?.internal_resistance_initial_mohm,
                     " mΩ"
                   )}
                   )
@@ -388,49 +387,25 @@ export default function App() {
               <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200">
                 <p className="text-xs font-medium text-amber-800">Eventos térmicos (Anexo XIII)</p>
                 <p className="text-sm font-bold text-amber-950 mt-1">
-                  {hl("bms.extreme_events", bms.extreme_events[0].event)}
+                  {hl("bms.extreme_events", bms?.extreme_events?.[0]?.event)}
                 </p>
                 <p className="text-[11px] text-amber-700 mt-0.5">
-                  {hl("bms.extreme_events", bms.extreme_events[0].date)} ·{" "}
-                  {hl("bms.extreme_events", bms.extreme_events[0].impact)}
+                  {hl("bms.extreme_events", bms?.extreme_events?.[0]?.date)} ·{" "}
+                  {hl("bms.extreme_events", bms?.extreme_events?.[0]?.impact)}
                 </p>
               </div>
             </div>
-
+            
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                <span className="text-slate-500 font-semibold block mb-1">
-                  Rendimiento Operativo
-                </span>
-                <p>
-                  Potencia pico disponible:{" "}
-                  <span className="font-bold text-slate-800">
-                    {hl("bms.remaining_power_w", bms.remaining_power_w || "-", " W")}
-                  </span>
-                </p>
-                <p>
-                  Eficiencia energética actual:{" "}
-                  <span className="font-bold text-slate-800">
-                    {hl("bms.remaining_efficiency_pct", bms.remaining_efficiency_pct || "-", "%")}
-                  </span>
-                </p>
+                <span className="text-slate-500 font-semibold block mb-1">Rendimiento Operativo</span>
+                <p>Potencia pico disponible: <span className="font-bold text-slate-800">{hl("bms.remaining_power_w", bms?.remaining_power_w || "-", " W")}</span></p>
+                <p>Eficiencia energética actual: <span className="font-bold text-slate-800">{hl("bms.remaining_efficiency_pct", bms?.remaining_efficiency_pct || "-", "%")}</span></p>
               </div>
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                <span className="text-slate-500 font-semibold block mb-1">
-                  Tráfico de Energía (Throughput)
-                </span>
-                <p>
-                  Energía total procesada:{" "}
-                  <span className="font-bold text-slate-800">
-                    {hl("bms.energy_throughput_wh", bms.energy_throughput_wh || "-", " Wh")}
-                  </span>
-                </p>
-                <p>
-                  Capacidad total procesada:{" "}
-                  <span className="font-bold text-slate-800">
-                    {hl("bms.capacity_throughput_ah", bms.capacity_throughput_ah || "-", " Ah")}
-                  </span>
-                </p>
+                <span className="text-slate-500 font-semibold block mb-1">Tráfico de Energía (Throughput)</span>
+                <p>Energía total procesada: <span className="font-bold text-slate-800">{hl("bms.energy_throughput_wh", bms?.energy_throughput_wh || "-", " Wh")}</span></p>
+                <p>Capacidad total procesada: <span className="font-bold text-slate-800">{hl("bms.capacity_throughput_ah", bms?.capacity_throughput_ah || "-", " Ah")}</span></p>
               </div>
             </div>
           </section>
@@ -449,10 +424,9 @@ export default function App() {
                     Reparación, Despiece y Reacondicionamiento (Segunda Vida)
                   </h2>
                   <p className="text-xs text-slate-500">
-                    Arquitectura: {hl("repair.cell_architecture", repair.cell_architecture)} · Ref.
-                    Despiece:{" "}
+                    Arquitectura: {hl("repair.cell_architecture", repair?.cell_architecture)} · Ref. Despiece:{" "}
                     <span className="font-mono">
-                      {hl("repair.disassembly_manual", repair.disassembly_manual)}
+                      {hl("repair.disassembly_manual", repair?.disassembly_manual)}
                     </span>
                   </p>
                 </div>
@@ -468,7 +442,7 @@ export default function App() {
                   Repuestos homologados disponibles:
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {repair.spare_parts.map((part, idx) => (
+                  {repair?.spare_parts?.map((part, idx) => (
                     <span
                       key={idx}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
@@ -482,29 +456,12 @@ export default function App() {
                   ))}
                 </div>
               </div>
-
+              
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-                <p className="font-semibold text-slate-700 mb-1">
-                  Proveedores de recambios (AAS):
-                </p>
+                <p className="font-semibold text-slate-700 mb-1">Proveedores de recambios (AAS):</p>
                 <div className="space-y-1 text-slate-600">
-                  <p>
-                    Portal web:{" "}
-                    <a
-                      href={repair.supplier_web || "#"}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-baidata-purple hover:underline"
-                    >
-                      {hl("repair.supplier_web", repair.supplier_web || "-")}
-                    </a>
-                  </p>
-                  <p>
-                    Email B2B:{" "}
-                    <span className="font-mono">
-                      {hl("repair.supplier_email", repair.supplier_email || "-")}
-                    </span>
-                  </p>
+                  <p>Portal web: <a href={repair?.supplier_web || "#"} target="_blank" rel="noreferrer" className="text-baidata-purple hover:underline">{hl("repair.supplier_web", repair?.supplier_web || "-")}</a></p>
+                  <p>Email B2B: <span className="font-mono">{hl("repair.supplier_email", repair?.supplier_email || "-")}</span></p>
                 </div>
               </div>
             </div>
@@ -553,7 +510,7 @@ export default function App() {
                 )}
               </div>
               <div className="space-y-2">
-                {serviceLogs.map((log, i) => (
+                {serviceLogs?.map((log, i) => (
                   <div
                     key={i}
                     className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs"
@@ -583,7 +540,7 @@ export default function App() {
                     Composición Química Detallada y Protocolo de Reciclaje
                   </h2>
                   <p className="text-xs text-slate-500">
-                    {hl("chemistry.source_node", chemistry.source_node)}
+                    {hl("chemistry.source_node", chemistry?.source_node)}
                   </p>
                 </div>
               </div>
@@ -596,19 +553,19 @@ export default function App() {
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                 <p className="text-slate-500 font-medium">Cátodo (Materias Críticas)</p>
                 <p className="font-bold text-slate-900 mt-1">
-                  {hl("chemistry.cathode", chemistry.cathode)}
+                  {hl("chemistry.cathode", chemistry?.cathode)}
                 </p>
               </div>
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                 <p className="text-slate-500 font-medium">Ánodo</p>
                 <p className="font-bold text-slate-900 mt-1">
-                  {hl("chemistry.anode", chemistry.anode)}
+                  {hl("chemistry.anode", chemistry?.anode)}
                 </p>
               </div>
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                 <p className="text-slate-500 font-medium">Electrolito</p>
                 <p className="font-bold text-slate-900 mt-1">
-                  {hl("chemistry.electrolyte", chemistry.electrolyte)}
+                  {hl("chemistry.electrolyte", chemistry?.electrolyte)}
                 </p>
               </div>
             </div>
@@ -618,13 +575,13 @@ export default function App() {
               <div>
                 <p className="font-bold">Protocolo de neutralización segura:</p>
                 <p className="mt-0.5">
-                  {hl("chemistry.safety_neutralization", chemistry.safety_neutralization)}
+                  {hl("chemistry.safety_neutralization", chemistry?.safety_neutralization)}
                 </p>
                 <div className="mt-1.5 pt-1.5 border-t border-red-200/50 space-y-1">
                   <p className="font-semibold text-[11px] text-red-800">
                     Sustancias peligrosas (REACH/CLP):
                   </p>
-                  {chemistry.hazardous_substances?.map((sub, i) => (
+                  {chemistry?.hazardous_substances?.map((sub, i) => (
                     <p key={i} className="text-[11px] text-red-700 ml-2">
                       • {hl("chemistry.hazardous_substances", sub)}
                     </p>
@@ -657,7 +614,7 @@ export default function App() {
               <p className="text-lg font-extrabold text-slate-900 mt-1">
                 {hl(
                   "performance.internal_resistance_initial_mohm",
-                  performance.internal_resistance_initial_mohm,
+                  performance?.internal_resistance_initial_mohm,
                   " mΩ"
                 )}
               </p>
@@ -669,7 +626,7 @@ export default function App() {
               <p className="text-lg font-extrabold text-slate-900 mt-1">
                 {hl(
                   "performance.round_trip_efficiency_initial_pct",
-                  performance.round_trip_efficiency_initial_pct,
+                  performance?.round_trip_efficiency_initial_pct,
                   "%"
                 )}
               </p>
@@ -677,7 +634,7 @@ export default function App() {
                 Al 50% vida:{" "}
                 {hl(
                   "performance.round_trip_efficiency_50pct_life_pct",
-                  performance.round_trip_efficiency_50pct_life_pct,
+                  performance?.round_trip_efficiency_50pct_life_pct,
                   "%"
                 )}
               </p>
@@ -688,7 +645,7 @@ export default function App() {
               <p className="text-lg font-extrabold text-slate-900 mt-1">
                 {hl(
                   "performance.expected_lifetime_cycles",
-                  performance.expected_lifetime_cycles,
+                  performance?.expected_lifetime_cycles,
                   " ciclos"
                 )}
               </p>
@@ -696,7 +653,7 @@ export default function App() {
                 Garantía diseño:{" "}
                 {hl(
                   "performance.expected_lifetime_years",
-                  performance.expected_lifetime_years,
+                  performance?.expected_lifetime_years,
                   " años"
                 )}
               </p>
@@ -707,7 +664,7 @@ export default function App() {
               <p className="text-lg font-extrabold text-slate-900 mt-1">
                 {hl(
                   "performance.capacity_exhaustion_threshold_pct",
-                  performance.capacity_exhaustion_threshold_pct,
+                  performance?.capacity_exhaustion_threshold_pct,
                   "% SoH"
                 )}
               </p>
@@ -722,8 +679,8 @@ export default function App() {
                   Rango Temperaturas (Operación)
                 </span>
                 <span className="font-bold text-slate-800">
-                  {hl("performance.temp_min", performance.temp_min || "-10", "°C")} a{" "}
-                  {hl("performance.temp_max", performance.temp_max || "45", "°C")}
+                  {hl("performance.temp_min", performance?.temp_min || "-10", "°C")} a{" "}
+                  {hl("performance.temp_max", performance?.temp_max || "45", "°C")}
                 </span>
               </div>
             </div>
@@ -731,8 +688,8 @@ export default function App() {
               <div>
                 <span className="text-slate-500 font-medium block">Voltajes Operativos</span>
                 <span className="font-bold text-slate-800">
-                  {hl("performance.volt_min", performance.volt_min || "30", "V")} (mín) /{" "}
-                  {hl("performance.volt_max", performance.volt_max || "42", "V")} (máx)
+                  {hl("performance.volt_min", performance?.volt_min || "30", "V")} (mín) /{" "}
+                  {hl("performance.volt_max", performance?.volt_max || "42", "V")} (máx)
                 </span>
               </div>
             </div>
@@ -753,13 +710,13 @@ export default function App() {
                 <p className="text-xs text-slate-500">
                   Artículos 48–52 · Auditoría Tercera Parte:{" "}
                   <span className="font-mono">
-                    {hl("dd.certificate_id", dueDiligence.public_attestation.certificate_id)}
+                    {hl("dd.certificate_id", dueDiligence?.public_attestation?.certificate_id)}
                   </span>
                 </p>
               </div>
             </div>
             <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              {hl("dd.status", dueDiligence.public_attestation.status)}
+              {hl("dd.status", dueDiligence?.public_attestation?.status)}
             </span>
           </div>
 
@@ -767,18 +724,18 @@ export default function App() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-bold text-slate-800">
                 Organismo Auditor:{" "}
-                {hl("dd.auditor", dueDiligence.public_attestation.auditor)}
+                {hl("dd.auditor", dueDiligence?.public_attestation?.auditor)}
               </span>
               <span className="text-slate-500">
                 Fecha verificación:{" "}
-                {hl("dd.audit_date", dueDiligence.public_attestation.audit_date)}
+                {hl("dd.audit_date", dueDiligence?.public_attestation?.audit_date)}
               </span>
             </div>
             <p className="text-slate-600 leading-relaxed">
-              {hl("dd.summary", dueDiligence.public_attestation.summary)}
+              {hl("dd.summary", dueDiligence?.public_attestation?.summary)}
             </p>
             <div className="flex flex-wrap gap-1.5 pt-1">
-              {dueDiligence.public_attestation.covered_minerals.map((m, idx) => (
+              {dueDiligence?.public_attestation?.covered_minerals?.map((m, idx) => (
                 <span
                   key={idx}
                   className="px-2.5 py-0.5 rounded-md bg-white border border-slate-200 font-semibold text-slate-700"
@@ -800,7 +757,7 @@ export default function App() {
                 </span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-                {dueDiligence.restricted_tier_traceability.map((item, idx) => (
+                {dueDiligence?.restricted_tier_traceability?.map((item, idx) => (
                   <div
                     key={idx}
                     className="p-3 rounded-lg bg-white border border-sky-200/80 space-y-1"
@@ -827,8 +784,7 @@ export default function App() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500 pt-1">
               <span className="inline-flex items-center gap-1.5">
                 <Lock className="w-3.5 h-3.5 text-slate-400" />
-                La identidad de proveedores y refinerías Tier-2/3 está protegida por secreto
-                comercial (acceso exclusivo Autoridad UE / OEM).
+                La identidad de proveedores y refinerías Tier-2/3 está protegida por secreto comercial (acceso exclusivo Autoridad UE / OEM).
               </span>
             </div>
           )}
@@ -857,15 +813,15 @@ export default function App() {
                   Huella de Carbono Declarada
                 </span>
                 <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800">
-                  {hl("carbon.performance_class", carbon.performance_class)}
+                  {hl("carbon.performance_class", carbon?.performance_class)}
                 </span>
               </div>
               <p className="text-2xl font-extrabold text-slate-900">
-                {hl("carbon.carbon_footprint_kg_kwh", carbon.carbon_footprint_kg_kwh)}{" "}
+                {hl("carbon.carbon_footprint_kg_kwh", carbon?.carbon_footprint_kg_kwh)}{" "}
                 <span className="text-xs font-normal text-slate-500">kg CO₂e/kWh</span>
               </p>
               <div className="space-y-1.5 pt-1">
-                {carbon.lifecycle_breakdown.map((item, i) => (
+                {carbon?.lifecycle_breakdown?.map((item, i) => (
                   <div key={i} className="text-xs">
                     <div className="flex justify-between text-slate-700 mb-0.5">
                       <span>{hl("carbon.lifecycle_breakdown", item.stage)}</span>
@@ -889,7 +845,7 @@ export default function App() {
                 Contenido Reciclado Certificado (vs. Meta UE 2031)
               </p>
               <div className="space-y-2.5">
-                {carbon.recycled_content.map((mat, i) => (
+                {carbon?.recycled_content?.map((mat, i) => (
                   <div
                     key={i}
                     className="flex items-center justify-between p-2.5 rounded-lg bg-white border border-slate-200/70 text-xs"
@@ -914,11 +870,11 @@ export default function App() {
           <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs text-slate-600 space-y-2">
             <p>
               <strong className="text-slate-800">Instrucciones de fin de vida: </strong>
-              {hl("carbon.end_of_life_info", carbon.end_of_life_info)}
+              {hl("carbon.end_of_life_info", carbon?.end_of_life_info)}
             </p>
             <p>
               <strong className="text-slate-800">Porcentaje material carcasa renovable: </strong>
-              {hl("carbon.renewable_content", carbon.renewable_content || "-", "%")}
+              {hl("carbon.renewable_content", carbon?.renewable_content || "-", "%")}
             </p>
           </div>
         </section>
