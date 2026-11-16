@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Manual Técnico de Despiece - IberiaVolt E-625</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            background-color: #f1f5f9;
+        }
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            margin: 10mm auto;
+            background: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            box-sizing: border-box;
+            position: relative;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 6mm;
+            margin-bottom: 8mm;
+        }
+        .logo {
+            height: 25mm; /* Ajusta según el recorte del logo de IberiaVolt */
+        }
+        .doc-meta {
+            text-align: right;
+            font-size: 10pt;
+            color: #64748b;
+        }
+        .doc-meta strong {
+            color: #0f172a;
+            display: block;
+            font-size: 11pt;
+            margin-bottom: 2px;
+        }
+        h1 {
+            font-size: 18pt;
+            color: #0f172a;
+            margin: 0 0 4mm 0;
+            line-height: 1.2;
+        }
+        h2 {
+            font-size: 14pt;
+            color: #334155;
+            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 2mm;
+            margin: 8mm 0 4mm 0;
+        }
+        p, li {
+            font-size: 10.5pt;
+            line-height: 1.6;
+            color: #334155;
+        }
+        .warning-box {
+            background-color: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            padding: 4mm 6mm;
+            margin: 6mm 0;
+        }
+        .warning-box h4 {
+            color: #b45309;
+            margin: 0 0 2mm 0;
+            font-size: 11pt;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 6mm 0;
+            font-size: 10pt;
+        }
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 3mm 4mm;
+            text-align: left;
+        }
+        th {
+            background-color: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+            width: 40%;
+        }
+        .diagram-container {
+            width: 100%;
+            text-align: center;
+            margin: 8mm 0;
+            background-color: #0f172a; /* Fondo oscuro a juego con el blueprint */
+            padding: 4mm;
+            border-radius: 8px;
+        }
+        .diagram-img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #334155;
+        }
+        .footer {
+            position: absolute;
+            bottom: 20mm;
+            left: 20mm;
+            right: 20mm;
+            display: flex;
+            justify-content: space-between;
+            font-size: 9pt;
+            color: #94a3b8;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 4mm;
+        }
+        
+        @media print {
+            body { background: none; }
+            .page { margin: 0; box-shadow: none; page-break-after: always; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PÁGINA 1: Especificaciones y Desmontaje -->
+    <div class="page">
+        <div class="header">
+            <!-- AQUÍ VA EL LOGO QUE HEMOS GENERADO -->
+            <img src="./iberiavolt-logo.jpg" alt="IberiaVolt Mobility" class="logo">
+            <div class="doc-meta">
+                <strong>MANUAL TÉCNICO B2B</strong>
+                Versión: 4.0 (Rev. 2026)<br>
+                Clase VDI: 04-01 (Mantenimiento)
+            </div>
+        </div>
+
+        <h1>Instrucciones de Despiece y Mantenimiento<br>Batería Modular e-Bike E-625</h1>
+        
+        <div class="warning-box">
+            <h4>⚠️ ACCESO RESTRINGIDO B2B</h4>
+            <p style="margin:0; font-size: 10pt;">Este documento contiene información técnica confidencial. Las operaciones descritas solo deben ser realizadas por talleres homologados o recicladores certificados en cumplimiento con el Reglamento (UE) 2023/1542.</p>
+        </div>
+
+        <h2>1. Especificaciones de Arquitectura</h2>
+        <table>
+            <tr>
+                <th>Arquitectura de Celdas</th>
+                <td>10S4P · 40 celdas cilíndricas 21700</td>
+            </tr>
+            <tr>
+                <th>Química</th>
+                <td>NMC 811 (Litio, Níquel, Cobalto)</td>
+            </tr>
+            <tr>
+                <th>Voltaje y Capacidad</th>
+                <td>36V Nominal · 17.36 Ah (625 Wh)</td>
+            </tr>
+            <tr>
+                <th>Sistema de Gestión (BMS)</th>
+                <td>IberiaVolt Smart-BMS v2 (Telemetría integrada)</td>
+            </tr>
+        </table>
+
+        <h2>2. Procedimiento de Apertura de Carcasa</h2>
+        <ol>
+            <li><strong>Desconexión:</strong> Asegúrese de que la batería está apagada y desconectada de cualquier cargador o vehículo. Compruebe el voltaje en los terminales (debe ser inferior a 42V).</li>
+            <li><strong>Retirada de sellado:</strong> Retire los 6 tornillos Torx T-15 de seguridad ubicados en la base de la carcasa de aluminio. Rompa el sello de garantía (etiqueta VOID).</li>
+            <li><strong>Apertura de la junta:</strong> Utilice una herramienta de cuña plástica para separar la tapa superior sin dañar la junta tórica de estanqueidad (IP67).</li>
+            <li><strong>Desconexión de BMS:</strong> Desconecte el arnés de balanceo de celdas (conector JST de 11 pines) de la placa BMS antes de extraer el bloque de celdas.</li>
+        </ol>
+
+        <h2>3. Portal de Recambios Homologados (OEM)</h2>
+        <p>Los recambios deben ser solicitados exclusivamente a través de los canales B2B autorizados utilizando el Identificador de Producto (BAT-2026-8841).</p>
+        <ul>
+            <li><strong>Portal Web:</strong> https://b2b.iberiavolt.es/spares</li>
+            <li><strong>Email de Soporte Técnico:</strong> workshop@iberiavolt.es</li>
+        </ul>
+
+        <div class="footer">
+            <span>IberiaVolt Mobility S.L. · Documentación Técnica B2B</span>
+            <span>Página 1 de 2</span>
+        </div>
+    </div>
+
+    <!-- PÁGINA 2: Plano Técnico -->
+    <div class="page">
+        <div class="header">
+            <img src="./iberiavolt-logo.jpg" alt="IberiaVolt Mobility" class="logo">
+            <div class="doc-meta">
+                <strong>ANEXO GRÁFICO</strong>
+                Plano de Ingeniería
+            </div>
+        </div>
+
+        <h2>Esquema de Ensamblaje y Disposición (Vista Explosionada)</h2>
+        
+        <p>A continuación se detalla la disposición interna del bloque de celdas (10S4P), la placa de gestión térmica y la unidad BMS superior. Extraiga el conjunto verticalmente sin someterlo a torsión mecánica.</p>
+
+        <!-- AQUÍ VA EL PLANO TÉCNICO (BLUEPRINT) QUE HEMOS GENERADO -->
+        <div class="diagram-container">
+            <img src="./diagrama-bateria.jpg" alt="Plano de despiece de la batería" class="diagram-img">
+        </div>
+
+        <div class="warning-box" style="border-left-color: #ef4444; background-color: #fef2f2;">
+            <h4 style="color: #b91c1c;">⚡ Peligro de Arco Eléctrico / Cortocircuito</h4>
+            <p style="margin:0; font-size: 10pt;">Durante la manipulación del bloque interno, utilice exclusivamente herramientas aisladas (Clase 0 / 1000V). El electrolito (LiPF6 en carbonatos orgánicos) es altamente inflamable; disponga siempre de agente extintor Clase D o Agua nebulizada (F-500) en la estación de trabajo.</p>
+        </div>
+
+        <div class="footer">
+            <span>IberiaVolt Mobility S.L. · Documentación Técnica B2B</span>
+            <span>Página 2 de 2</span>
+        </div>
+    </div>
+
+</body>
+</html>
