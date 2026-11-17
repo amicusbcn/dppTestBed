@@ -852,7 +852,66 @@ export async function fetchBatteryDpp(explicitLang = null, explicitId = null) {
         mark("dd.restricted_tier_traceability");
       }
     }
+    // 9. SERVICE REQUEST NOTIFICATION - HISTORIAL DE INTERVENCIONES (IDTA 02010)
+    const smService = submodels.find(
+      (s) =>
+        s.idShort === "ServiceRequestNotification" ||
+        s.semanticId?.keys?.some((k) => k.value?.includes("0173-1#01-AHX443"))
+    );
 
+    if (smService?.submodelElements) {
+      mapped.submodels.workshop_repair.service_submodel_id = smService.id;
+
+      const srnCollections = smService.submodelElements.filter(
+        (el) =>
+          el.modelType === "SubmodelElementCollection" &&
+          (el.idShort?.startsWith("ServiceRequestNotification") ||
+            el.semanticId?.keys?.some((k) => k.value?.includes("0173-1#01-AHX444")))
+      );
+
+      const parsedLogs = srnCollections
+        .map((col) => {
+          const cEls = col.value || [];
+          const srnId = getPropVal(cEls, "ServiceRequestNotificationId", col.idShort);
+          const serviceType = getPropVal(cEls, "ServiceType", "InnerInspection");
+          const status = getPropVal(cEls, "Status", "Closed");
+          const shortText = getTextVal(findEl(cEls, "ShortText"), lang, "");
+
+          const repEls = findEl(cEls, "ReportedBy")?.value || [];
+          const operatorName = getPropVal(repEls, "CustomerNumber", "Operador Acreditado");
+
+          const contactEls = findEl(cEls, "OnsiteContact")?.value || [];
+          const operatorDid = getPropVal(contactEls, "PartnerNumber", "");
+
+          const detEls = findEl(cEls, "DetailedInformation")?.value || [];
+          const rawDate = getPropVal(detEls, "StartOfFault", "");
+          const partOrCode = getPropVal(detEls, "ErrorCode", "");
+          const longText = getTextVal(findEl(detEls, "LongText"), lang, "");
+
+          const actionParts = [
+            `[${serviceType}]`,
+            shortText,
+            longText && longText !== shortText ? `— ${longText}` : "",
+            partOrCode && partOrCode !== "NONE" ? `(Ref: ${partOrCode})` : "",
+          ].filter(Boolean);
+
+          return {
+            id: srnId,
+            serviceType,
+            status,
+            date: rawDate ? rawDate.split("T")[0] : "2026-04-18",
+            rawDate: rawDate || "2026-04-18T00:00:00Z",
+            operator: operatorDid ? `${operatorName} (${operatorDid})` : operatorName,
+            action: actionParts.join(" "),
+          };
+        })
+        .sort((a, b) => b.rawDate.localeCompare(a.rawDate));
+
+      if (parsedLogs.length > 0) {
+        mapped.submodels.workshop_repair.service_log = parsedLogs;
+        mark("repair.service_log");
+      }
+    }
     return {
       data: mapped,
       source: "basyx",

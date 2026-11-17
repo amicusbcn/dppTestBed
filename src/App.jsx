@@ -45,6 +45,9 @@ export default function App() {
       setDppData(data);
       setAasSource(source);
       setAasMappedFields(new Set(mappedFields || []));
+      if (data?.submodels?.workshop_repair?.service_log) {
+        setServiceLogs(data.submodels.workshop_repair.service_log);
+      }
     });
   }, [lang, batteryId]);
 

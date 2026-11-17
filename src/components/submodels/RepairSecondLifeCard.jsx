@@ -106,12 +106,18 @@ export default function RepairSecondLifeCard({
         </div>
         <div className="space-y-2">
           {serviceLogs?.map((log, i) => (
-            <div key={i} className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-              <div className="flex flex-wrap items-center justify-between gap-1 text-slate-500">
-                <span className="font-semibold text-rose-600">{log.operator}</span>
-                <span className="font-mono text-rose-600">{log.date}</span>
+            <div key={log.id || i} className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-1 text-slate-600">
+                <span className="font-semibold text-slate-900">
+                  <AuditField isFromAas={isFromAas} fieldKey="repair.service_log" value={log.operator} />
+                </span>
+                <span className="font-mono text-slate-500">
+                  <AuditField isFromAas={isFromAas} fieldKey="repair.service_log" value={log.date} />
+                </span>
               </div>
-              <p className="text-rose-600 mt-1">{log.action}</p>
+              <p className="text-slate-700 mt-1">
+                <AuditField isFromAas={isFromAas} fieldKey="repair.service_log" value={log.action} />
+              </p>
             </div>
           ))}
         </div>
