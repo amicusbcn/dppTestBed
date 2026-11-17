@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import fallbackDppData from "./data/batteryDpp.json";
-import { fetchBatteryDpp } from "./services/aasClient";
+import { fetchBatteryDpp, getRouteParams } from "./services/aasClient";
 import BaidataHeader from "./components/BaidataHeader";
 import WalletAuthModal from "./components/WalletAuthModal";
 import EdcTraceModal from "./components/EdcTraceModal";
@@ -38,14 +38,26 @@ export default function App() {
   const [serviceLogs, setServiceLogs] = useState(
     fallbackDppData.submodels.workshop_repair.service_log
   );
+const [lang, setLang] = useState(() => getRouteParams().lang);
+  const [batteryId, setBatteryId] = useState(() => getRouteParams().batteryId);
 
   useEffect(() => {
-    fetchBatteryDpp().then(({ data, source, mappedFields }) => {
+    const handlePopState = () => {
+      const params = getRouteParams();
+      setLang(params.lang);
+      setBatteryId(params.batteryId);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
+    fetchBatteryDpp(lang, batteryId).then(({ data, source, mappedFields }) => {
       setDppData(data);
       setAasSource(source);
       setAasMappedFields(new Set(mappedFields || []));
     });
-  }, []);
+  }, [lang, batteryId]);
 
   const role = activeCredential?.id || "public";
   const canViewBms = ["owner", "workshop", "authority", "oem"].includes(role);
@@ -129,21 +141,13 @@ export default function App() {
         activeCredential={activeCredential}
         onOpenWallet={() => setIsWalletOpen(true)}
         onLogout={() => setActiveCredential(null)}
+        lang={lang}
+        onChangeLang={setLang}
+        batteryId={dppData.battery_id || batteryId}
       />
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
         {/* LEYENDA DE AUDITORÍA DE ORIGEN DE DATOS */}
-        <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-sm flex flex-wrap items-center justify-center gap-5 text-xs">
-          <span className="flex items-center gap-1.5 text-slate-800 font-semibold">
-            <span className="w-2.5 h-2.5 rounded-full bg-slate-800" />
-            Extraído en vivo del AAS (Azure BaSyx · {aasMappedFields.size} campos)
-          </span>
-          <span className="flex items-center gap-1.5 text-rose-600 font-semibold">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-            Respaldo JSON local (pendiente en AAS)
-          </span>
-        </div>
-
         {activeCredential && (
           <div className="p-4 rounded-2xl bg-emerald-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
             <div className="flex items-start sm:items-center gap-3">
@@ -183,24 +187,6 @@ export default function App() {
                 <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md">
                   ID: {hl("battery_id", dppData.battery_id)}
                 </span>
-                <span
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
-                    aasSource === "basyx"
-                      ? "bg-sky-50 text-sky-700 border-sky-200"
-                      : "bg-slate-100 text-slate-600 border-slate-200"
-                  }`}
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      aasSource === "basyx" ? "bg-sky-500 animate-pulse" : "bg-slate-400"
-                    }`}
-                  />
-                  {aasSource === "basyx"
-                    ? "AAS En Vivo · Azure BaSyx"
-                    : aasSource === "connecting"
-                    ? "Conectando AAS..."
-                    : "Modo Respaldo Local"}
-                </span>
               </div>
 
               <div>
@@ -216,17 +202,34 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs flex items-start gap-2.5">
-                <Building2 className="w-4 h-4 text-baidata-purple shrink-0 mt-0.5" />
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs flex items-center gap-3.5">
+                {!isRepurposed ? (
+                  <img
+                    src={currentOperator?.logo_url || "/iberiavolt-logo.jpg"}
+                    alt={currentOperator?.name || "Operador"}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = "/iberiavolt-logo.jpg";
+                    }}
+                    className="w-12 h-12 rounded-lg bg-white border border-slate-200 object-contain p-1 shrink-0"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0">
+                    <Building2 className="w-5 h-5 text-amber-700" />
+                  </div>
+                )}
+
                 <div className="min-w-0">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                    Operador Económico Responsable del DPP
+                    {lang === "en"
+                      ? "DPP Responsible Economic Operator"
+                      : "Operador Económico Responsable del DPP"}
                   </p>
-                  <p className="font-bold text-slate-900 mt-0.5">
+                  <p className="font-bold text-slate-900 text-sm mt-0.5">
                     {isRepurposed
                       ? currentOperator?.name
                       : hl("responsible_operator.name", currentOperator?.name)}{" "}
-                    <span className="font-mono font-normal text-slate-500">
+                    <span className="font-mono font-normal text-xs text-slate-500">
                       (
                       {isRepurposed
                         ? currentOperator?.eori_vat
@@ -234,11 +237,11 @@ export default function App() {
                       )
                     </span>
                   </p>
-                  <p className="text-slate-600">
-                    {isRepurposed
-                      ? currentOperator?.role
-                      : hl("responsible_operator.role", currentOperator?.role)}
-                  </p>
+                  {isRepurposed && (
+                    <p className="text-amber-800 font-medium mt-0.5">
+                      {currentOperator?.role}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -247,13 +250,15 @@ export default function App() {
               <div className="p-2 bg-white rounded-xl border border-slate-200 shadow-xs">
                 <QRCodeSVG value={liveScanUrl} size={96} level="M" />
               </div>
-              <div className="text-left sm:text-center max-w-[160px]">
+              <div className="text-left sm:text-center max-w-[175px]">
                 <p className="text-[11px] font-bold text-slate-800 flex items-center sm:justify-center gap-1">
-                  <QrCode className="w-3.5 h-3.5 text-baidata-purple" />
-                  <span>GS1 Digital Link</span>
+                  <QrCode className="w-3.5 h-3.5 text-baidata-purple shrink-0" />
+                  <span>IEC 61406 Identification Link</span>
                 </p>
                 <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">
-                  Escanea con tu móvil para abrir este pasaporte en directo
+                  {lang === "en"
+                    ? "Scan with your phone to open this live passport"
+                    : "Escanea con tu móvil para abrir este pasaporte en directo"}
                 </p>
               </div>
             </div>

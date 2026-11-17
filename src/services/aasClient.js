@@ -9,22 +9,45 @@ const AAS_BASE_URL =
     : RAW_AAS_URL;
 
 const DEFAULT_BATTERY_ID = "BAT-2026-8841";
+const SUPPORTED_LANGS = ["es", "en"];
 
-export function getRequestedBatteryId() {
-  if (typeof window === "undefined") return DEFAULT_BATTERY_ID;
+function toBase64Url(str) {
+  return btoa(unescape(encodeURIComponent(str)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+export function getRouteParams() {
+  if (typeof window === "undefined") {
+    return { lang: "es", batteryId: DEFAULT_BATTERY_ID };
+  }
 
   const cleanPath = window.location.pathname.replace(/\/+$/, "");
-  const match = cleanPath.match(/\/id\/([^/]+)$/i);
-  if (match?.[1]) {
-    return decodeURIComponent(match[1]);
+  const segments = cleanPath.split("/").filter(Boolean);
+
+  let lang = "es";
+  if (segments[0] && SUPPORTED_LANGS.includes(segments[0].toLowerCase())) {
+    lang = segments[0].toLowerCase();
+  } else {
+    const queryLang = new URLSearchParams(window.location.search).get("lang");
+    if (queryLang && SUPPORTED_LANGS.includes(queryLang.toLowerCase())) {
+      lang = queryLang.toLowerCase();
+    }
   }
 
-  const queryId = new URLSearchParams(window.location.search).get("id");
-  if (queryId) {
-    return queryId.trim();
-  }
+  const idIndex = segments.findIndex((s) => s.toLowerCase() === "id");
+  const batteryId =
+    idIndex !== -1 && segments[idIndex + 1]
+      ? decodeURIComponent(segments[idIndex + 1])
+      : new URLSearchParams(window.location.search).get("id") || DEFAULT_BATTERY_ID;
 
-  return DEFAULT_BATTERY_ID;
+  return { lang, batteryId };
+}
+
+export function buildPassportPath(lang = "es", batteryId = DEFAULT_BATTERY_ID) {
+  const prefix = lang === "en" ? "/en" : "";
+  return `${prefix}/id/${encodeURIComponent(batteryId)}`;
 }
 
 function getTextVal(el, lang = "es", fallback = undefined) {
@@ -145,8 +168,10 @@ function translateExtinguishingAgent(raw = "", lang = "es") {
   return entry ? entry[lang] || entry.es : raw;
 }
 
-export async function fetchBatteryDpp(lang = "es", explicitId = null) {
-  const requestedId = explicitId || getRequestedBatteryId();
+export async function fetchBatteryDpp(explicitLang = null, explicitId = null) {
+  const route = getRouteParams();
+  const lang = explicitLang || route.lang;
+  const requestedId = explicitId || route.batteryId;
 
   if (!AAS_BASE_URL) {
     return { data: fallbackData, source: "local", mappedFields: [], requestedId };
@@ -258,6 +283,15 @@ export async function fetchBatteryDpp(lang = "es", explicitId = null) {
         mapped.asset_uri = uriProd;
         mark("asset_uri");
       }
+      const logoEl = findEl(els, "CompanyLogo");
+      if (logoEl?.value && smNameplate.id) {
+        mapped.responsible_operator.logo_url = `${AAS_BASE_URL}/submodels/${toBase64Url(
+          smNameplate.id
+        )}/submodel-elements/CompanyLogo/attachment`;
+        mark("responsible_operator.logo_url");
+      }
+      // Eliminamos el rol para que no aparezca como campo sin mapear
+      delete mapped.responsible_operator.role;
       const mfgDate = getPropVal(els, "DateOfManufacture");
       if (mfgDate !== undefined) {
         mapped.submodels.public_nameplate.manufacturing_date = mfgDate;

@@ -17,33 +17,7 @@ export default function BaidataHeader({ activeCredential, onOpenWallet, onLogout
           </span>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {!activeCredential ? (
-            <button
-              onClick={onOpenWallet}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-baidata-purple text-white hover:bg-baidata-purpleDark transition shadow-sm"
-            >
-              <Wallet className="w-4 h-4" />
-              <span>Identificarse (Wallet / VC)</span>
-            </button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span className="max-w-[140px] sm:max-w-[210px] truncate">
-                  {activeCredential.holderName}
-                </span>
-              </div>
-              <button
-                onClick={onLogout}
-                title="Cerrar sesión de Wallet"
-                className="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-        </div>
+        <HeaderActionsMenu activeRole="{activeCredential?.id}" batteryId="{batteryId}" lang="{lang}" onChangeLang="{onChangeLang}" onOpenAuthModal="{onOpenWallet}"/>
       </div>
     </header>
   );
