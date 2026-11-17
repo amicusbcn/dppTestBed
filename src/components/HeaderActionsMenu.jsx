@@ -85,7 +85,20 @@ export default function HeaderActionsMenu({
               <span>{t("header.signOut")}</span>
             </button>
           )}
-
+          <a
+            href="https://dms-emobility-bilbao.vercel.app" // Cambiaremos esto por tu dominio real
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+            onClick={() => setOpen(false)}
+          >
+            <span className="font-medium">
+              {lang === "en" ? "Workshop Portal (DMS)" : "Portal de Talleres (DMS)"}
+            </span>
+            <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
           <div className="my-1 border-t border-slate-100" />
 
           <button
