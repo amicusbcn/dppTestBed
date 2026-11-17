@@ -14,6 +14,7 @@ import DueDiligenceCard from "./components/submodels/DueDiligenceCard";
 import SustainabilityCard from "./components/submodels/SustainabilityCard";
 import HandoverDocsCard from "./components/submodels/HandoverDocsCard";
 import { ShieldCheck, Server } from "lucide-react";
+import ServiceRecordModal from "./components/ServiceRecordModal";
 
 export default function App() {
   const [dppData, setDppData] = useState(fallbackDppData);
@@ -28,6 +29,7 @@ export default function App() {
   );
   const [lang, setLang] = useState(() => getRouteParams().lang);
   const [batteryId, setBatteryId] = useState(() => getRouteParams().batteryId);
+  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const { t } = useTranslation(lang);
 
   useEffect(() => {
@@ -40,7 +42,7 @@ export default function App() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  useEffect(() => {
+  const reloadPassport = () => {
     fetchBatteryDpp(lang, batteryId).then(({ data, source, mappedFields }) => {
       setDppData(data);
       setAasSource(source);
@@ -49,6 +51,10 @@ export default function App() {
         setServiceLogs(data.submodels.workshop_repair.service_log);
       }
     });
+  };
+
+  useEffect(() => {
+    reloadPassport();
   }, [lang, batteryId]);
 
   const role = activeCredential?.id || "public";
@@ -151,7 +157,7 @@ export default function App() {
             serviceLogs={serviceLogs}
             isRepurposed={isRepurposed}
             canEditWorkshop={permissions.canEditWorkshop}
-            onAddServiceRecord={handleAddServiceRecord}
+            onAddServiceRecord={() => setIsServiceModalOpen(true)}
             onToggleSecondLife={handleToggleSecondLife}
             isFromAas={isFromAas}
             t={t}
@@ -223,6 +229,16 @@ export default function App() {
         onClose={() => setIsTraceOpen(false)}
         dppData={dppData}
         activeCredential={activeCredential}
+        lang={lang}
+      />
+
+      <ServiceRecordModal
+        isOpen={isServiceModalOpen}
+        onClose={() => setIsServiceModalOpen(false)}
+        dppData={dppData}
+        activeCredential={activeCredential}
+        currentLogsCount={serviceLogs.length}
+        onSuccess={reloadPassport}
         lang={lang}
       />
     </div>

@@ -417,6 +417,7 @@ export async function fetchBatteryDpp(explicitLang = null, explicitId = null) {
 
     // 3. PRODUCT CONDITION - TELEMETRÍA BMS (IDTA 02035-5)
     if (smCond?.submodelElements) {
+      mapped.submodels.dynamic_bms.aas_submodel_id = smCond.id;
       const els = smCond.submodelElements;
 
       const batStatus = getPropVal(els, "BatteryStatus");
@@ -923,4 +924,271 @@ export async function fetchBatteryDpp(explicitLang = null, explicitId = null) {
     console.warn("No se pudo conectar con Azure BaSyx, usando datos locales:", err.message);
     return { data: fallbackData, source: "local", mappedFields: [], requestedId };
   }
+}
+
+export const SERVICE_OPERATION_CATALOG = {
+  InnerInspection: {
+    es: "Diagnóstico preventivo de celdas y calibración BMS",
+    en: "Preventive cell diagnostics and BMS calibration",
+  },
+  Repair: {
+    es: "Sustitución de módulo de celdas o componente defectuoso",
+    en: "Defective cell module or component replacement",
+  },
+  FirmwareUpdate: {
+    es: "Actualización de firmware de gestión térmica y seguridad BMS",
+    en: "BMS thermal management and safety firmware update",
+  },
+  Overhauling: {
+    es: "Reacondicionamiento integral para Segunda Vida (Art. 77.6)",
+    en: "Full overhauling and repurposing for Second Life (Art. 77.6)",
+  },
+};
+
+export async function registerServiceIntervention({
+  serviceSubmodelId,
+  conditionSubmodelId,
+  currentCount = 1,
+  serviceType = "InnerInspection",
+  partNumber = "NONE",
+  notes = "",
+  postSoH = null,
+  operatorName,
+  operatorDid,
+}) {
+  if (!AAS_BASE_URL || !serviceSubmodelId) {
+    throw new Error("No hay conexión activa con el submodelo ServiceRequestNotification en BaSyx.");
+  }
+
+  const nowIso = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+  const nextIndex = Number(currentCount || 0) + 1;
+  const padded = String(nextIndex).padStart(3, "0");
+  const srnId = `SRN-2026-${padded}`;
+  const uniqueIdShort = `ServiceRequestNotification_${Date.now().toString().slice(-6)}`;
+
+  const opLabels = SERVICE_OPERATION_CATALOG[serviceType] || SERVICE_OPERATION_CATALOG.InnerInspection;
+  const cleanNotes = notes.trim();
+
+  const newCollection = {
+    modelType: "SubmodelElementCollection",
+    idShort: uniqueIdShort,
+    semanticId: {
+      type: "ExternalReference",
+      keys: [
+        {
+          type: "GlobalReference",
+          value: "0173-1#02-ABI788#001/0173-1#01-AHX444#001",
+        },
+      ],
+    },
+    value: [
+      {
+        modelType: "Property",
+        idShort: "ServiceRequestNotificationId",
+        semanticId: {
+          type: "ExternalReference",
+          keys: [{ type: "GlobalReference", value: "0173-1#02-ABI772#001" }],
+        },
+        valueType: "xs:string",
+        value: srnId,
+      },
+      {
+        modelType: "Property",
+        idShort: "Status",
+        semanticId: {
+          type: "ExternalReference",
+          keys: [{ type: "GlobalReference", value: "0173-1#02-ABH938#002" }],
+        },
+        valueType: "xs:string",
+        value: "Closed",
+      },
+      {
+        modelType: "Property",
+        idShort: "Priority",
+        semanticId: {
+          type: "ExternalReference",
+          keys: [{ type: "GlobalReference", value: "0173-1#02-ABI773#001" }],
+        },
+        valueType: "xs:string",
+        value: serviceType === "Repair" ? "High" : "Medium",
+      },
+      {
+        modelType: "Property",
+        idShort: "ServiceType",
+        semanticId: {
+          type: "ExternalReference",
+          keys: [{ type: "GlobalReference", value: "0173-1#02-ABI763#001" }],
+        },
+        valueType: "xs:string",
+        value: serviceType,
+      },
+      {
+        modelType: "MultiLanguageProperty",
+        idShort: "ShortText",
+        semanticId: {
+          type: "ExternalReference",
+          keys: [{ type: "GlobalReference", value: "0173-1#02-ABI762#001" }],
+        },
+        value: [
+          { language: "es", text: opLabels.es },
+          { language: "en", text: opLabels.en },
+        ],
+      },
+      {
+        modelType: "SubmodelElementCollection",
+        idShort: "ReportedBy",
+        semanticId: {
+          type: "ExternalReference",
+          keys: [
+            {
+              type: "GlobalReference",
+              value: "0173-1#02-ABI792#00/0173-1#01-AHX448#001",
+            },
+          ],
+        },
+        value: [
+          {
+            modelType: "Property",
+            idShort: "CustomerNumber",
+            semanticId: {
+              type: "ExternalReference",
+              keys: [{ type: "GlobalReference", value: "0173-1#02-ABI769#001" }],
+            },
+            valueType: "xs:string",
+            value: operatorName,
+          },
+        ],
+      },
+      {
+        modelType: "SubmodelElementCollection",
+        idShort: "DetailedInformation",
+        semanticId: {
+          type: "ExternalReference",
+          keys: [
+            {
+              type: "GlobalReference",
+              value: "0173-1#02-ABI789#001/0173-1#01-AHX445#001",
+            },
+          ],
+        },
+        value: [
+          {
+            modelType: "Property",
+            idShort: "StartOfFault",
+            semanticId: {
+              type: "ExternalReference",
+              keys: [{ type: "GlobalReference", value: "0173-1#02-ABI765#001" }],
+            },
+            valueType: "xs:dateTime",
+            value: nowIso,
+          },
+          {
+            modelType: "Property",
+            idShort: "ErrorCode",
+            semanticId: {
+              type: "ExternalReference",
+              keys: [{ type: "GlobalReference", value: "0173-1#02-ABI766#001" }],
+            },
+            valueType: "xs:string",
+            value: partNumber || "NONE",
+          },
+          {
+            modelType: "MultiLanguageProperty",
+            idShort: "LongText",
+            semanticId: {
+              type: "ExternalReference",
+              keys: [{ type: "GlobalReference", value: "0173-1#02-ABI764#001" }],
+            },
+            value: [
+              {
+                language: "es",
+                text: cleanNotes || `Intervención verificada y firmada por ${operatorName}`,
+              },
+              {
+                language: "en",
+                text: cleanNotes || `Intervention verified and signed by ${operatorName}`,
+              },
+            ],
+          },
+        ],
+      },
+      {
+        modelType: "SubmodelElementCollection",
+        idShort: "OnsiteContact",
+        semanticId: {
+          type: "ExternalReference",
+          keys: [
+            {
+              type: "GlobalReference",
+              value: "0173-1#02-ABI793#001/0173-1#01-AHX449#001",
+            },
+          ],
+        },
+        value: [
+          {
+            modelType: "Property",
+            idShort: "PartnerNumber",
+            semanticId: {
+              type: "ExternalReference",
+              keys: [{ type: "GlobalReference", value: "0173-1#02-ABI771#001" }],
+            },
+            valueType: "xs:string",
+            value: operatorDid,
+          },
+        ],
+      },
+    ],
+  };
+
+  const encodedServiceSm = toBase64Url(serviceSubmodelId);
+
+  // 1. Crear la nueva colección en el submodelo ServiceRequestNotification
+  const postRes = await fetch(`${AAS_BASE_URL}/submodels/${encodedServiceSm}/submodel-elements`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(newCollection),
+  });
+
+  if (!postRes.ok) {
+    throw new Error(`Error BaSyx POST (${postRes.status}): no se pudo crear el registro.`);
+  }
+
+  // 2. Actualizar el contador NumberOfServiceRequestNotifications
+  await fetch(
+    `${AAS_BASE_URL}/submodels/${encodedServiceSm}/submodel-elements/NumberOfServiceRequestNotifications/$value`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(String(nextIndex)),
+    }
+  ).catch(() => {});
+
+  // 3. Si se indica un nuevo SoH tras la reparación, actualizar ProductCondition en vivo
+  if (conditionSubmodelId && postSoH !== null && postSoH !== "") {
+    const encodedCondSm = toBase64Url(conditionSubmodelId);
+    const cleanTs = nowIso.replace("Z", "");
+    await Promise.all([
+      fetch(
+        `${AAS_BASE_URL}/submodels/${encodedCondSm}/submodel-elements/StateOfCertifiedEnergy.StateOfCertifiedEnergyValue/$value`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(String(postSoH)),
+        }
+      ),
+      fetch(
+        `${AAS_BASE_URL}/submodels/${encodedCondSm}/submodel-elements/StateOfCertifiedEnergy.LastUpdate/$value`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(cleanTs),
+        }
+      ),
+    ]).catch(() => {});
+  }
+
+  return { srnId, timestamp: nowIso };
 }

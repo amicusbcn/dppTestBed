@@ -165,5 +165,20 @@
         "policyGranted": "ODRL:Full-Access-All-Submodels (BMS + Repair + Chemistry + B2G)"
       }
     }
-  }
+  },
+  "serviceModal": {
+  "title": "Registrar Intervención en AAS (IDTA 02010)",
+  "subtitle": "Emisión firmada hacia el repositorio del Operador Económico",
+  "operationLabel": "Tipo de intervención (DIN 31051 / EN 13306)",
+  "partLabel": "Componente / Repuesto sustituido (Circularity)",
+  "noPartOption": "Sin sustitución de componentes (NONE)",
+  "updateSohCheck": "Actualizar Estado de Salud (SoH) certificado tras reparación",
+  "newSohLabel": "Nuevo SoH verificado",
+  "notesLabel": "Observaciones técnicas del taller",
+  "notesPlaceholder": "Ej. Sustitución de módulo 10S4P y equilibrado de celdas...",
+  "signatureBoxTitle": "Firma Verificable del Taller (Simulación DID)",
+  "cancel": "Cancelar",
+  "submitting": "Firmando y escribiendo en BaSyx...",
+  "submitBtn": "Firmar con DID y Registrar en AAS"
+}
 }

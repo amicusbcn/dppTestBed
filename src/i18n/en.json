@@ -165,5 +165,20 @@
         "policyGranted": "ODRL:Full-Access-All-Submodels (BMS + Repair + Chemistry + B2G)"
       }
     }
+  },
+    "serviceModal": {
+    "title": "Log Intervention in AAS (IDTA 02010)",
+    "subtitle": "Signed submission to the Economic Operator repository",
+    "operationLabel": "Intervention type (DIN 31051 / EN 13306)",
+    "partLabel": "Replaced component / spare part (Circularity)",
+    "noPartOption": "No component replacement (NONE)",
+    "updateSohCheck": "Update certified State of Health (SoH) after repair",
+    "newSohLabel": "New verified SoH",
+    "notesLabel": "Workshop technical remarks",
+    "notesPlaceholder": "E.g. 10S4P cell module replacement and cell balancing...",
+    "signatureBoxTitle": "Workshop Verifiable Signature (DID Simulation)",
+    "cancel": "Cancel",
+    "submitting": "Signing & writing to BaSyx...",
+    "submitBtn": "Sign with DID & Write to AAS"
   }
 }
