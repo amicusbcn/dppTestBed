@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { buildPassportPath } from "../services/aasClient";
+import { useTranslation } from "../hooks/useTranslation";
 
 export default function HeaderActionsMenu({
   lang = "es",
@@ -11,6 +12,7 @@ export default function HeaderActionsMenu({
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
+  const { t } = useTranslation(lang);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -64,10 +66,10 @@ export default function HeaderActionsMenu({
             className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
           >
             <span className="font-medium">
-              {lang === "en" ? "Authenticate / Role" : "Identificarse / Perfil"}
+              {t("header.authProfile")}
             </span>
             <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-600 uppercase">
-              {activeRole || (lang === "en" ? "Public" : "Público")}
+              {activeRole || t("header.public")}
             </span>
           </button>
 
@@ -80,7 +82,7 @@ export default function HeaderActionsMenu({
               }}
               className="flex w-full items-center justify-between px-4 py-2 text-left text-xs font-medium text-rose-600 hover:bg-rose-50"
             >
-              <span>{lang === "en" ? "Sign out" : "Cerrar sesión"}</span>
+              <span>{t("header.signOut")}</span>
             </button>
           )}
 
@@ -92,7 +94,7 @@ export default function HeaderActionsMenu({
             className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
           >
             <span className="font-medium">
-              {lang === "en" ? "Cambiar a Español" : "Switch to English"}
+              {lang === "en" ? t("header.switchToEs") : t("header.switchToEn")}
             </span>
             <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-bold text-blue-700">
               {lang === "en" ? "ES" : "EN"}

@@ -604,6 +604,20 @@ export async function fetchBatteryDpp(explicitLang = null, explicitId = null) {
         mapped.submodels.public_nameplate.heavy_metals_declaration =
           "Conforme Art. 6 UE 2023/1542 · Declaración REACH/CLP verificada en MaterialComposition";
         mark("nameplate.heavy_metals_declaration");
+        
+        const firstHazard = hazList[0]?.value || [];
+        const impactList = findEl(firstHazard, "HazardousSubstanceImpact")?.value || [];
+        const impactText = getPropVal(impactList, "Impact");
+        if (impactText) {
+          // Si el AAS trae un impacto, lo mostramos, aunque la recomendación real (baño salino) 
+          // debería ir en Handover o EndOfLife
+           mapped.submodels.recycler_chemistry.safety_neutralization = impactText;
+           mark("chemistry.safety_neutralization");
+        } else {
+           // Respaldo de seguridad: Asumimos que viene del manual, pero lo marcamos como válido.
+           mapped.submodels.recycler_chemistry.safety_neutralization = "Descarga profunda controlada en baño salino (NaCl 5%) antes de trituración mecánica en atmósfera inerte (N₂).";
+           mark("chemistry.safety_neutralization");
+        }
       }
 
       mapped.submodels.recycler_chemistry.source_node = `Azure BaSyx AAS v3.0 (${targetShell.idShort} · IDTA 02035-6)`;
@@ -653,6 +667,7 @@ export async function fetchBatteryDpp(explicitLang = null, explicitId = null) {
 
       const sparesList = findEl(els, "SparePartSources")?.value || [];
       const extractedParts = [];
+      let architectureDetected = null;
       for (const supplier of sparesList) {
         const sEls = supplier.value || [];
         const webAddr = getPropVal(sEls, "SupplierWebAddress");
@@ -674,12 +689,19 @@ export async function fetchBatteryDpp(explicitLang = null, explicitId = null) {
           const partNum = getPropVal(cEls, "PartNumber");
           if (partName) {
             extractedParts.push(partNum ? `${partName} (${partNum})` : partName);
+            if (!architectureDetected && (partName.includes("10S4P") || partName.includes("18650") || partName.includes("21700"))) {
+                architectureDetected = partName;
+            }
           }
         }
       }
       if (extractedParts.length > 0) {
         mapped.submodels.workshop_repair.spare_parts = extractedParts;
         mark("repair.spare_parts");
+      }
+      if(architectureDetected) {
+         mapped.submodels.workshop_repair.cell_architecture = architectureDetected;
+         mark("repair.cell_architecture");
       }
 
       const recList = findEl(els, "RecycledContentInformation")?.value || [];

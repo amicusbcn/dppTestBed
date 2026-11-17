@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import fallbackDppData from "./data/batteryDpp.json";
 import { fetchBatteryDpp, getRouteParams } from "./services/aasClient";
+import { useTranslation } from "./hooks/useTranslation";
 import BaidataHeader from "./components/BaidataHeader";
 import WalletAuthModal from "./components/WalletAuthModal";
 import EdcTraceModal from "./components/EdcTraceModal";
@@ -24,7 +25,7 @@ import {
   Flame,
   RefreshCw,
   Building2,
-  Download
+  Download,
 } from "lucide-react";
 
 export default function App() {
@@ -38,8 +39,9 @@ export default function App() {
   const [serviceLogs, setServiceLogs] = useState(
     fallbackDppData.submodels.workshop_repair.service_log
   );
-const [lang, setLang] = useState(() => getRouteParams().lang);
+  const [lang, setLang] = useState(() => getRouteParams().lang);
   const [batteryId, setBatteryId] = useState(() => getRouteParams().batteryId);
+  const { t } = useTranslation(lang);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -74,7 +76,6 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
     dynamic_bms: bms,
     workshop_repair: repair,
     recycler_chemistry: chemistry,
-    regulatory_compliance: compliance,
     handover_documentation: docs,
   } = dppData.submodels || fallbackDppData.submodels;
 
@@ -100,7 +101,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
     ? {
         name: "E-Mobility Bilbao Re-Power S.L.",
         eori_vat: "ESB48992104",
-        role: "Operador Segunda Vida · Almacenamiento Estacionario (Art. 77.6)",
+        role: t("dpp.secondLifeOperatorRole"),
         did: "did:web:emobility-bilbao.es",
       }
     : dppData.responsible_operator;
@@ -111,7 +112,10 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
       {
         date: today,
         operator: `${activeCredential.holderName} (${activeCredential.did})`,
-        action: "Diagnóstico preventivo de celdas y recalibración de resistencia interna",
+        action:
+          lang === "en"
+            ? "Preventive cell diagnostics and internal resistance recalibration"
+            : "Diagnóstico preventivo de celdas y recalibración de resistencia interna",
       },
       ...serviceLogs,
     ]);
@@ -126,7 +130,9 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
           date: today,
           operator: `${activeCredential.holderName} (${activeCredential.did})`,
           action:
-            "REACONDICIONAMIENTO SEGUNDA VIDA (Art. 77.6): Reconfiguración para sistema estacionario solar 48V y traspaso de responsabilidad de operador económico.",
+            lang === "en"
+              ? "SECOND LIFE REPURPOSING (Art. 77.6): Reconfigured for 48V stationary solar storage and economic operator responsibility transferred."
+              : "REACONDICIONAMIENTO SEGUNDA VIDA (Art. 77.6): Reconfiguración para sistema estacionario solar 48V y traspaso de responsabilidad de operador económico.",
         },
         ...serviceLogs,
       ]);
@@ -147,14 +153,13 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
       />
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
-        {/* LEYENDA DE AUDITORÍA DE ORIGEN DE DATOS */}
         {activeCredential && (
           <div className="p-4 rounded-2xl bg-emerald-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
             <div className="flex items-start sm:items-center gap-3">
               <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5 sm:mt-0" />
               <div className="text-xs">
                 <p className="font-bold text-sm">
-                  Acceso autenticado: {activeCredential.holderName}
+                  {t("dpp.authAccess")}: {activeCredential.holderName}
                 </p>
                 <p className="text-emerald-200/80 font-mono text-[11px] mt-0.5">
                   {activeCredential.did} · {activeCredential.policyGranted}
@@ -162,7 +167,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
               </div>
             </div>
             <span className="inline-flex items-center self-start sm:self-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-800/80 text-emerald-200">
-              Submodelos autorizados desbloqueados
+              {t("dpp.authSubmodels")}
             </span>
           </div>
         )}
@@ -180,9 +185,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                   }`}
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  {isRepurposed
-                    ? "Reacondicionada · Segunda Vida (Estacionaria)"
-                    : dppData.status}
+                  {isRepurposed ? t("dpp.statusRepurposed") : dppData.status}
                 </span>
                 <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md">
                   ID: {hl("battery_id", dppData.battery_id)}
@@ -221,9 +224,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
 
                 <div className="min-w-0">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                    {lang === "en"
-                      ? "DPP Responsible Economic Operator"
-                      : "Operador Económico Responsable del DPP"}
+                    {t("dpp.operatorLabel")}
                   </p>
                   <p className="font-bold text-slate-900 text-sm mt-0.5">
                     {isRepurposed
@@ -256,9 +257,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                   <span>IEC 61406 Identification Link</span>
                 </p>
                 <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">
-                  {lang === "en"
-                    ? "Scan with your phone to open this live passport"
-                    : "Escanea con tu móvil para abrir este pasaporte en directo"}
+                  {t("dpp.qrLabel")}
                 </p>
               </div>
             </div>
@@ -267,7 +266,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
             <div className="p-3.5 rounded-xl bg-baidata-lavenderSoft/50 border border-baidata-lavender/60">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-baidata-purple">
-                Capacidad Nominal
+                {t("dpp.nominalCapacity")}
               </p>
               <p className="text-xl font-extrabold text-slate-900 mt-1">
                 {hl("nameplate.nominal_capacity_wh", nameplate?.nominal_capacity_wh, " Wh")}
@@ -280,7 +279,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                Química de celda
+                {t("dpp.cellChemistry")}
               </p>
               <p className="text-sm font-bold text-slate-900 mt-1">
                 {hl("nameplate.chemistry", nameplate?.chemistry)}
@@ -289,7 +288,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                Fabricación y Masa
+                {t("dpp.mfgAndMass")}
               </p>
               <p className="text-sm font-bold text-slate-900 mt-1">
                 {hl("nameplate.manufacturing_date", nameplate?.manufacturing_date)} ·{" "}
@@ -299,11 +298,11 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                Categoría UE
+                {t("dpp.euCategory")}
               </p>
               <p className="text-sm font-bold text-slate-900 mt-1">
                 {isRepurposed
-                  ? "Almacenamiento Estacionario (SB)"
+                  ? t("dpp.stationaryCategory")
                   : hl("nameplate.battery_category", nameplate?.battery_category)}
               </p>
             </div>
@@ -313,7 +312,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
             <div className="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200/80 flex items-start gap-2 text-amber-950">
               <Flame className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold block">Agentes extintores homologados: </span>
+                <span className="font-bold block">{t("dpp.extinguishingAgents")}: </span>
                 <span className="text-amber-800">
                   {hl(
                     "nameplate.extinguishing_agents",
@@ -322,9 +321,11 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                 </span>
               </div>
             </div>
-            
+
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col justify-center">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase">Declaración metales pesados</span>
+              <span className="text-[11px] font-semibold text-slate-500 uppercase">
+                {t("dpp.heavyMetals")}
+              </span>
               <span className="font-medium text-slate-700 mt-0.5">
                 {hl("nameplate.heavy_metals_declaration", nameplate?.heavy_metals_declaration)}
               </span>
@@ -341,38 +342,34 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                   <BatteryCharging className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">
-                    Estado de Salud y Telemetría Dinámica BMS
-                  </h2>
+                  <h2 className="text-base font-bold text-slate-900">{t("dpp.bmsTitle")}</h2>
                   <p className="text-xs text-slate-500">{hl("bms.last_sync", bms?.last_sync)}</p>
                 </div>
               </div>
               <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-baidata-lavenderSoft text-baidata-purple">
-                Acceso Autorizado · BMS
+                {t("dpp.bmsAuth")}
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200">
-                <p className="text-xs font-medium text-emerald-800">Estado de Salud (SoH)</p>
+                <p className="text-xs font-medium text-emerald-800">{t("dpp.soh")}</p>
                 <p className="text-2xl font-extrabold text-emerald-900 mt-1">
                   {hl("bms.state_of_health_soh", bms?.state_of_health_soh, "%")}
                 </p>
                 <p className="text-[11px] text-emerald-700 mt-0.5">
-                  Capacidad útil:{" "}
+                  {t("dpp.usefulCapacity")}:{" "}
                   {hl("bms.remaining_capacity_wh", bms?.remaining_capacity_wh, " Wh")}
                 </p>
               </div>
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                <p className="text-xs font-medium text-slate-600">
-                  Ciclos y Resistencia Actual
-                </p>
+                <p className="text-xs font-medium text-slate-600">{t("dpp.cyclesAndRes")}</p>
                 <p className="text-2xl font-extrabold text-slate-900 mt-1">
                   {hl("bms.charge_cycles", bms?.charge_cycles)}{" "}
-                  <span className="text-xs font-normal text-slate-500">ciclos</span>
+                  <span className="text-xs font-normal text-slate-500">{t("dpp.cycles")}</span>
                 </p>
                 <p className="text-[11px] text-slate-600 mt-0.5">
-                  Resistencia interna BMS:{" "}
+                  {t("dpp.internalRes")}:{" "}
                   <strong>
                     {hl(
                       "performance.internal_resistance_current_mohm",
@@ -380,7 +377,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                       " mΩ"
                     )}
                   </strong>{" "}
-                  (Inicial:{" "}
+                  ({t("dpp.initial")}:{" "}
                   {hl(
                     "performance.internal_resistance_initial_mohm",
                     performance?.internal_resistance_initial_mohm,
@@ -390,7 +387,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                 </p>
               </div>
               <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200">
-                <p className="text-xs font-medium text-amber-800">Eventos térmicos (Anexo XIII)</p>
+                <p className="text-xs font-medium text-amber-800">{t("dpp.thermalEvents")}</p>
                 <p className="text-sm font-bold text-amber-950 mt-1">
                   {hl("bms.extreme_events", bms?.extreme_events?.[0]?.event)}
                 </p>
@@ -400,17 +397,41 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                 </p>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                <span className="text-slate-500 font-semibold block mb-1">Rendimiento Operativo</span>
-                <p>Potencia pico disponible: <span className="font-bold text-slate-800">{hl("bms.remaining_power_w", bms?.remaining_power_w || "-", " W")}</span></p>
-                <p>Eficiencia energética actual: <span className="font-bold text-slate-800">{hl("bms.remaining_efficiency_pct", bms?.remaining_efficiency_pct || "-", "%")}</span></p>
+                <span className="text-slate-500 font-semibold block mb-1">
+                  {t("dpp.operationalPerf")}
+                </span>
+                <p>
+                  {t("dpp.peakPower")}:{" "}
+                  <span className="font-bold text-slate-800">
+                    {hl("bms.remaining_power_w", bms?.remaining_power_w || "-", " W")}
+                  </span>
+                </p>
+                <p>
+                  {t("dpp.energyEff")}:{" "}
+                  <span className="font-bold text-slate-800">
+                    {hl("bms.remaining_efficiency_pct", bms?.remaining_efficiency_pct || "-", "%")}
+                  </span>
+                </p>
               </div>
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                <span className="text-slate-500 font-semibold block mb-1">Tráfico de Energía (Throughput)</span>
-                <p>Energía total procesada: <span className="font-bold text-slate-800">{hl("bms.energy_throughput_wh", bms?.energy_throughput_wh || "-", " Wh")}</span></p>
-                <p>Capacidad total procesada: <span className="font-bold text-slate-800">{hl("bms.capacity_throughput_ah", bms?.capacity_throughput_ah || "-", " Ah")}</span></p>
+                <span className="text-slate-500 font-semibold block mb-1">
+                  {t("dpp.energyTraffic")}
+                </span>
+                <p>
+                  {t("dpp.totalEnergyProc")}:{" "}
+                  <span className="font-bold text-slate-800">
+                    {hl("bms.energy_throughput_wh", bms?.energy_throughput_wh || "-", " Wh")}
+                  </span>
+                </p>
+                <p>
+                  {t("dpp.totalCapProc")}:{" "}
+                  <span className="font-bold text-slate-800">
+                    {hl("bms.capacity_throughput_ah", bms?.capacity_throughput_ah || "-", " Ah")}
+                  </span>
+                </p>
               </div>
             </div>
           </section>
@@ -425,11 +446,11 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                   <Wrench className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">
-                    Reparación, Despiece y Reacondicionamiento (Segunda Vida)
-                  </h2>
+                  <h2 className="text-base font-bold text-slate-900">{t("dpp.repairTitle")}</h2>
                   <p className="text-xs text-slate-500">
-                    Arquitectura: {hl("repair.cell_architecture", repair?.cell_architecture)} · Ref. Despiece:{" "}
+                    {t("dpp.architecture")}:{" "}
+                    {hl("repair.cell_architecture", repair?.cell_architecture)} ·{" "}
+                    {t("dpp.disassemblyRef")}:{" "}
                     <span className="font-mono">
                       {hl("repair.disassembly_manual", repair?.disassembly_manual)}
                     </span>
@@ -437,14 +458,14 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                 </div>
               </div>
               <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800">
-                Acceso B2B · Operador Acreditado
+                {t("dpp.repairAuth")}
               </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-xs font-semibold text-slate-700 mb-2">
-                  Repuestos homologados disponibles:
+                  {t("dpp.sparesTitle")}:
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {repair?.spare_parts?.map((part, idx) => (
@@ -461,12 +482,27 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                   ))}
                 </div>
               </div>
-              
+
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-                <p className="font-semibold text-slate-700 mb-1">Proveedores de recambios (AAS):</p>
+                <p className="font-semibold text-slate-700 mb-1">{t("dpp.sparesSuppliers")}:</p>
                 <div className="space-y-1 text-slate-600">
-                  <p>Portal web: <a href={repair?.supplier_web || "#"} target="_blank" rel="noreferrer" className="text-baidata-purple hover:underline">{hl("repair.supplier_web", repair?.supplier_web || "-")}</a></p>
-                  <p>Email B2B: <span className="font-mono">{hl("repair.supplier_email", repair?.supplier_email || "-")}</span></p>
+                  <p>
+                    {t("dpp.webPortal")}:{" "}
+                    <a
+                      href={repair?.supplier_web || "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-baidata-purple hover:underline"
+                    >
+                      {hl("repair.supplier_web", repair?.supplier_web || "-")}
+                    </a>
+                  </p>
+                  <p>
+                    {t("dpp.b2bEmail")}:{" "}
+                    <span className="font-mono">
+                      {hl("repair.supplier_email", repair?.supplier_email || "-")}
+                    </span>
+                  </p>
                 </div>
               </div>
             </div>
@@ -474,13 +510,9 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
             {canEditWorkshop && (
               <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div>
-                  <p className="font-bold text-amber-950">
-                    Operación de Economía Circular (Reglamento UE Art. 77.6)
-                  </p>
+                  <p className="font-bold text-amber-950">{t("dpp.circularOpsTitle")}</p>
                   <p className="text-amber-800 mt-0.5">
-                    {isRepurposed
-                      ? "La batería ya consta como reacondicionada para almacenamiento estacionario."
-                      : "Certifica la reutilización del pack para almacenamiento solar estacionario y asume la titularidad del DPP."}
+                    {isRepurposed ? t("dpp.circularOpsDesc1") : t("dpp.circularOpsDesc2")}
                   </p>
                 </div>
                 <button
@@ -490,9 +522,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   <span>
-                    {isRepurposed
-                      ? "Revertir a Primera Vida (Demo)"
-                      : "Certificar Segunda Vida"}
+                    {isRepurposed ? t("dpp.revertFirstLife") : t("dpp.certifySecondLife")}
                   </span>
                 </button>
               </div>
@@ -501,7 +531,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
             <div className="space-y-2.5 pt-2 border-t border-slate-100">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-slate-700">
-                  Historial federado de intervenciones (Trazabilidad AAS)
+                  {t("dpp.traceHistoryTitle")}
                 </p>
                 {canEditWorkshop && (
                   <button
@@ -510,7 +540,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-white hover:bg-slate-900 transition"
                   >
                     <PlusCircle className="w-3.5 h-3.5" />
-                    <span>Registrar intervención</span>
+                    <span>{t("dpp.addRecordBtn")}</span>
                   </button>
                 )}
               </div>
@@ -541,34 +571,32 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                   <Recycle className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">
-                    Composición Química Detallada y Protocolo de Reciclaje
-                  </h2>
+                  <h2 className="text-base font-bold text-slate-900">{t("dpp.chemTitle")}</h2>
                   <p className="text-xs text-slate-500">
                     {hl("chemistry.source_node", chemistry?.source_node)}
                   </p>
                 </div>
               </div>
               <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
-                Acceso B2B · Gestor Autorizado
+                {t("dpp.chemAuth")}
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                <p className="text-slate-500 font-medium">Cátodo (Materias Críticas)</p>
+                <p className="text-slate-500 font-medium">{t("dpp.cathode")}</p>
                 <p className="font-bold text-slate-900 mt-1">
                   {hl("chemistry.cathode", chemistry?.cathode)}
                 </p>
               </div>
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                <p className="text-slate-500 font-medium">Ánodo</p>
+                <p className="text-slate-500 font-medium">{t("dpp.anode")}</p>
                 <p className="font-bold text-slate-900 mt-1">
                   {hl("chemistry.anode", chemistry?.anode)}
                 </p>
               </div>
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                <p className="text-slate-500 font-medium">Electrolito</p>
+                <p className="text-slate-500 font-medium">{t("dpp.electrolyte")}</p>
                 <p className="font-bold text-slate-900 mt-1">
                   {hl("chemistry.electrolyte", chemistry?.electrolyte)}
                 </p>
@@ -578,13 +606,13 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
             <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-xs text-red-900">
               <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold">Protocolo de neutralización segura:</p>
+                <p className="font-bold">{t("dpp.neutralizationProto")}:</p>
                 <p className="mt-0.5">
                   {hl("chemistry.safety_neutralization", chemistry?.safety_neutralization)}
                 </p>
                 <div className="mt-1.5 pt-1.5 border-t border-red-200/50 space-y-1">
                   <p className="font-semibold text-[11px] text-red-800">
-                    Sustancias peligrosas (REACH/CLP):
+                    {t("dpp.hazardousSubs")}:
                   </p>
                   {chemistry?.hazardous_substances?.map((sub, i) => (
                     <p key={i} className="text-[11px] text-red-700 ml-2">
@@ -604,18 +632,14 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
               <Activity className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900">
-                Rendimiento Electroquímico y Durabilidad
-              </h2>
-              <p className="text-xs text-slate-500">
-                Parámetros nominales declarados · Anexo IV Reglamento (UE) 2023/1542
-              </p>
+              <h2 className="text-base font-bold text-slate-900">{t("dpp.perfTitle")}</h2>
+              <p className="text-xs text-slate-500">{t("dpp.perfSubtitle")}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-              <p className="text-slate-500 font-medium">Resistencia Interna Inicial</p>
+              <p className="text-slate-500 font-medium">{t("dpp.initRes")}</p>
               <p className="text-lg font-extrabold text-slate-900 mt-1">
                 {hl(
                   "performance.internal_resistance_initial_mohm",
@@ -623,11 +647,11 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                   " mΩ"
                 )}
               </p>
-              <p className="text-[11px] text-slate-500 mt-0.5">A 25 °C · 50% SoC</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">{t("dpp.at25c50soc")}</p>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-              <p className="text-slate-500 font-medium">Eficiencia Ida y Vuelta</p>
+              <p className="text-slate-500 font-medium">{t("dpp.roundTripEff")}</p>
               <p className="text-lg font-extrabold text-slate-900 mt-1">
                 {hl(
                   "performance.round_trip_efficiency_initial_pct",
@@ -636,7 +660,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                 )}
               </p>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                Al 50% vida:{" "}
+                {t("dpp.at50Life")}:{" "}
                 {hl(
                   "performance.round_trip_efficiency_50pct_life_pct",
                   performance?.round_trip_efficiency_50pct_life_pct,
@@ -646,26 +670,26 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-              <p className="text-slate-500 font-medium">Vida Útil Esperada</p>
+              <p className="text-slate-500 font-medium">{t("dpp.expectedLife")}</p>
               <p className="text-lg font-extrabold text-slate-900 mt-1">
                 {hl(
                   "performance.expected_lifetime_cycles",
                   performance?.expected_lifetime_cycles,
-                  " ciclos"
+                  ` ${t("dpp.cycles")}`
                 )}
               </p>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                Garantía diseño:{" "}
+                {t("dpp.designWarranty")}:{" "}
                 {hl(
                   "performance.expected_lifetime_years",
                   performance?.expected_lifetime_years,
-                  " años"
+                  ` ${t("dpp.years")}`
                 )}
               </p>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-              <p className="text-slate-500 font-medium">Umbral Agotamiento</p>
+              <p className="text-slate-500 font-medium">{t("dpp.exhaustionThreshold")}</p>
               <p className="text-lg font-extrabold text-slate-900 mt-1">
                 {hl(
                   "performance.capacity_exhaustion_threshold_pct",
@@ -673,28 +697,29 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                   "% SoH"
                 )}
               </p>
-              <p className="text-[11px] text-slate-500 mt-0.5">Apto Segunda Vida &lt;80%</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">{t("dpp.secondLifeFit")}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
               <div>
-                <span className="text-slate-500 font-medium block">
-                  Rango Temperaturas (Operación)
-                </span>
+                <span className="text-slate-500 font-medium block">{t("dpp.tempRange")}</span>
                 <span className="font-bold text-slate-800">
-                  {hl("performance.temp_min", performance?.temp_min || "-10", "°C")} a{" "}
+                  {hl("performance.temp_min", performance?.temp_min || "-10", "°C")}{" "}
+                  {t("dpp.to")}{" "}
                   {hl("performance.temp_max", performance?.temp_max || "45", "°C")}
                 </span>
               </div>
             </div>
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
               <div>
-                <span className="text-slate-500 font-medium block">Voltajes Operativos</span>
+                <span className="text-slate-500 font-medium block">{t("dpp.opVoltages")}</span>
                 <span className="font-bold text-slate-800">
-                  {hl("performance.volt_min", performance?.volt_min || "30", "V")} (mín) /{" "}
-                  {hl("performance.volt_max", performance?.volt_max || "42", "V")} (máx)
+                  {hl("performance.volt_min", performance?.volt_min || "30", "V")} (
+                  {t("dpp.min")}) /{" "}
+                  {hl("performance.volt_max", performance?.volt_max || "42", "V")} (
+                  {t("dpp.max")})
                 </span>
               </div>
             </div>
@@ -709,11 +734,9 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                 <Globe className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-slate-900">
-                  Trazabilidad de Materias Primas y Diligencia Debida
-                </h2>
+                <h2 className="text-base font-bold text-slate-900">{t("dpp.traceTitle")}</h2>
                 <p className="text-xs text-slate-500">
-                  Artículos 48–52 · Auditoría Tercera Parte:{" "}
+                  {t("dpp.traceSubtitle")}:{" "}
                   <span className="font-mono">
                     {hl("dd.certificate_id", dueDiligence?.public_attestation?.certificate_id)}
                   </span>
@@ -728,11 +751,11 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 text-xs space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-bold text-slate-800">
-                Organismo Auditor:{" "}
+                {t("dpp.auditorBody")}:{" "}
                 {hl("dd.auditor", dueDiligence?.public_attestation?.auditor)}
               </span>
               <span className="text-slate-500">
-                Fecha verificación:{" "}
+                {t("dpp.verifyDate")}:{" "}
                 {hl("dd.audit_date", dueDiligence?.public_attestation?.audit_date)}
               </span>
             </div>
@@ -754,12 +777,8 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
           {canViewTier3Supply ? (
             <div className="p-4 rounded-xl bg-sky-50/70 border border-sky-200 space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-bold text-sky-950">
-                  Desglose Confidencial de Cadena de Custodia (Refinerías Tier-2/3 · Acceso B2G)
-                </p>
-                <span className="text-[11px] font-mono text-sky-800">
-                  Sello eIDAS verificado
-                </span>
+                <p className="text-xs font-bold text-sky-950">{t("dpp.tier3Title")}</p>
+                <span className="text-[11px] font-mono text-sky-800">{t("dpp.eidasSeal")}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
                 {dueDiligence?.restricted_tier_traceability?.map((item, idx) => (
@@ -779,7 +798,8 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                       {hl("dd.restricted_tier_traceability", item.origin)}
                     </p>
                     <p className="text-[11px] font-medium text-slate-500">
-                      Refinería: {hl("dd.restricted_tier_traceability", item.refiner)}
+                      {t("dpp.refinery")}:{" "}
+                      {hl("dd.restricted_tier_traceability", item.refiner)}
                     </p>
                   </div>
                 ))}
@@ -789,7 +809,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500 pt-1">
               <span className="inline-flex items-center gap-1.5">
                 <Lock className="w-3.5 h-3.5 text-slate-400" />
-                La identidad de proveedores y refinerías Tier-2/3 está protegida por secreto comercial (acceso exclusivo Autoridad UE / OEM).
+                {t("dpp.tier3Lock")}
               </span>
             </div>
           )}
@@ -802,12 +822,8 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
               <Leaf className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900">
-                Huella de Carbono y Contenido Reciclado
-              </h2>
-              <p className="text-xs text-slate-500">
-                Información pública obligatoria · Reglamento (UE) 2023/1542
-              </p>
+              <h2 className="text-base font-bold text-slate-900">{t("dpp.sustainTitle")}</h2>
+              <p className="text-xs text-slate-500">{t("dpp.sustainSubtitle")}</p>
             </div>
           </div>
 
@@ -815,7 +831,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
               <div className="flex items-baseline justify-between">
                 <span className="text-xs font-semibold text-slate-600">
-                  Huella de Carbono Declarada
+                  {t("dpp.declaredCarbon")}
                 </span>
                 <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800">
                   {hl("carbon.performance_class", carbon?.performance_class)}
@@ -846,9 +862,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
-              <p className="text-xs font-semibold text-slate-600">
-                Contenido Reciclado Certificado (vs. Meta UE 2031)
-              </p>
+              <p className="text-xs font-semibold text-slate-600">{t("dpp.certifiedRecycled")}</p>
               <div className="space-y-2.5">
                 {carbon?.recycled_content?.map((mat, i) => (
                   <div
@@ -863,7 +877,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                         {hl("carbon.recycled_content", mat.actual, "%")}
                       </span>
                       <span className="text-[11px] text-slate-500 ml-1.5">
-                        (Meta: {mat.target_2031}%)
+                        ({t("dpp.target")}: {mat.target_2031}%)
                       </span>
                     </div>
                   </div>
@@ -874,11 +888,11 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
 
           <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs text-slate-600 space-y-2">
             <p>
-              <strong className="text-slate-800">Instrucciones de fin de vida: </strong>
+              <strong className="text-slate-800">{t("dpp.eolInstructions")}: </strong>
               {hl("carbon.end_of_life_info", carbon?.end_of_life_info)}
             </p>
             <p>
-              <strong className="text-slate-800">Porcentaje material carcasa renovable: </strong>
+              <strong className="text-slate-800">{t("dpp.renewableCasing")}: </strong>
               {hl("carbon.renewable_content", carbon?.renewable_content || "-", "%")}
             </p>
           </div>
@@ -892,12 +906,8 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                 <FileText className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-slate-900">
-                  Documentación Técnica y Normativa (Handover)
-                </h2>
-                <p className="text-xs text-slate-500">
-                  VDI 2770 / IDTA 02004 · Documentos adjuntos y certificados
-                </p>
+                <h2 className="text-base font-bold text-slate-900">{t("dpp.docTitle")}</h2>
+                <p className="text-xs text-slate-500">{t("dpp.docSubtitle")}</p>
               </div>
             </div>
           </div>
@@ -926,7 +936,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                               : "bg-amber-100 text-amber-800"
                           }`}
                         >
-                          {isPublic ? "Acceso Público" : "Acceso Restringido B2B"}
+                          {isPublic ? t("dpp.publicAccess") : t("dpp.restrictedAccess")}
                         </span>
                         <span className="text-[11px] font-mono text-slate-500">
                           {hl(`docs.${idx}.doc_id`, doc.doc_id)}
@@ -936,8 +946,8 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                         {hl(`docs.${idx}.title`, doc.title)}
                       </h3>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        Versión: {hl(`docs.${idx}.version`, doc.version)} · Clase VDI:{" "}
-                        {doc.class_id}
+                        {t("dpp.version")}: {hl(`docs.${idx}.version`, doc.version)} ·{" "}
+                        {t("dpp.vdiClass")}: {doc.class_id}
                       </p>
                     </div>
 
@@ -955,25 +965,23 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
                         {doc.file_url !== "#" ? (
                           <>
                             <Download className="w-4 h-4" />
-                            <span>Descargar PDF</span>
+                            <span>{t("dpp.downloadPdf")}</span>
                           </>
                         ) : (
-                          "Sin archivo"
+                          t("dpp.noFile")
                         )}
                       </a>
                     ) : (
                       <div className="px-3 py-2 rounded-lg bg-slate-200 text-slate-500 text-xs font-medium flex items-center gap-1.5 shrink-0">
                         <Lock className="w-3.5 h-3.5" />
-                        Requiere Credencial
+                        {t("dpp.credRequiredBadge")}
                       </div>
                     )}
                   </div>
                 );
               })
             ) : (
-              <p className="text-sm text-slate-500 italic px-2">
-                No hay documentos técnicos disponibles.
-              </p>
+              <p className="text-sm text-slate-500 italic px-2">{t("dpp.noDocs")}</p>
             )}
           </div>
 
@@ -981,15 +989,14 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
             <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500">
               <span className="inline-flex items-center gap-1.5">
                 <Lock className="w-3.5 h-3.5 text-slate-400" />
-                Los submodelos de telemetría BMS, despiece, química y trazabilidad Tier-3
-                requieren credencial verificable.
+                {t("dpp.credRequiredLock")}
               </span>
               <button
                 type="button"
                 onClick={() => setIsWalletOpen(true)}
                 className="text-baidata-purple font-semibold hover:underline self-start sm:self-center shrink-0"
               >
-                Presentar credencial →
+                {t("dpp.presentCred")}
               </button>
             </div>
           )}
@@ -999,8 +1006,8 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
       <footer className="border-t border-slate-200 bg-white mt-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
           <p>
-            Infraestructura de Espacios de Datos Soberanos ·{" "}
-            <strong className="text-slate-700">BAIDATA</strong> (IDSA Hub España)
+            {t("footer.idsa")} · <strong className="text-slate-700">BAIDATA</strong> (IDSA Hub
+            España)
           </p>
           <button
             type="button"
@@ -1008,7 +1015,7 @@ const [lang, setLang] = useState(() => getRouteParams().lang);
             className="inline-flex items-center gap-1.5 text-slate-500 hover:text-baidata-purple font-mono text-[11px] transition"
           >
             <Server className="w-3.5 h-3.5" />
-            <span>Inspeccionar API AAS / Traza Nodo EDC</span>
+            <span>{t("footer.inspect")}</span>
           </button>
         </div>
       </footer>
