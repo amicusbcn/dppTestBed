@@ -589,35 +589,36 @@ export async function fetchBatteryDpp(explicitLang = null, explicitId = null) {
 
       const hazList = findEl(els, "HazardousSubstances")?.value || [];
       if (hazList.length > 0) {
+        const prep = lang === "en" ? "in" : "en";
         mapped.submodels.recycler_chemistry.hazardous_substances = hazList.map((h) => {
           const hEls = h.value || [];
-          const name = getPropVal(hEls, "HazardousSubstanceName", "Sustancia");
+          const name = getPropVal(hEls, "HazardousSubstanceName", "Substance");
           const cas = getPropVal(hEls, "HazardousSubstanceIdentifier", "-");
           const conc = getPropVal(hEls, "HazardousSubstanceConcentration");
           const locCol = findEl(hEls, "HazardousSubstanceLocation")?.value || [];
           const loc = getPropVal(locCol, "ComponentName", "Cathode");
           return conc !== undefined
-            ? `${name} [CAS ${cas}] · ${conc}% en ${loc}`
+            ? `${name} [CAS ${cas}] · ${conc}% ${prep} ${loc}`
             : `${name} [CAS ${cas}]`;
         });
         mark("chemistry.hazardous_substances");
         mapped.submodels.public_nameplate.heavy_metals_declaration =
-          "Conforme Art. 6 UE 2023/1542 · Declaración REACH/CLP verificada en MaterialComposition";
+          lang === "en"
+            ? "Compliant with Art. 6 EU 2023/1542 · REACH/CLP declaration verified in MaterialComposition"
+            : "Conforme Art. 6 UE 2023/1542 · Declaración REACH/CLP verificada en MaterialComposition";
         mark("nameplate.heavy_metals_declaration");
-        
-        const firstHazard = hazList[0]?.value || [];
-        const impactList = findEl(firstHazard, "HazardousSubstanceImpact")?.value || [];
-        const impactText = getPropVal(impactList, "Impact");
-        if (impactText) {
-          // Si el AAS trae un impacto, lo mostramos, aunque la recomendación real (baño salino) 
-          // debería ir en Handover o EndOfLife
-           mapped.submodels.recycler_chemistry.safety_neutralization = impactText;
-           mark("chemistry.safety_neutralization");
-        } else {
-           // Respaldo de seguridad: Asumimos que viene del manual, pero lo marcamos como válido.
-           mapped.submodels.recycler_chemistry.safety_neutralization = "Descarga profunda controlada en baño salino (NaCl 5%) antes de trituración mecánica en atmósfera inerte (N₂).";
-           mark("chemistry.safety_neutralization");
-        }
+
+        // ❌ ELIMINADO: Aquí estaba el bloque de firstHazard / impactText que sobrescribía safety_neutralization
+      }
+
+      // ✅ AÑADIR AQUÍ: Lectura directa de SafetyNeutralization desde el AAS
+      const neutText = getTextVal(findEl(els, "SafetyNeutralization"), lang);
+      if (neutText) {
+        mapped.submodels.recycler_chemistry.safety_neutralization =
+          lang === "en" && neutText.includes("baño salino")
+            ? "Controlled deep discharge in saline bath (5% NaCl) prior to mechanical shredding under inert atmosphere (N₂)."
+            : neutText;
+        mark("chemistry.safety_neutralization");
       }
 
       mapped.submodels.recycler_chemistry.source_node = `Azure BaSyx AAS v3.0 (${targetShell.idShort} · IDTA 02035-6)`;
