@@ -105,5 +105,65 @@
   },
   "bms": {
     "lastSync": "Sincronizado desde Azure BaSyx"
+  },
+  "edcModal": {
+    "title": "Arquitectura Federada · API AAS & Conectores EDC",
+    "subtitle": "Negociación de políticas ODRL y resolución de submodelos IDTA 02035",
+    "accessSectionTitle": "Resolución de acceso por submodelo en la sesión actual",
+    "authorized": "Autorizado",
+    "denied": "Denegado",
+    "catalogTitle": "Respuesta JSON-LD del Catálogo Federado (M2M)",
+    "sm1": "1. Placa de Características y Seguridad",
+    "sm2": "2. Rendimiento y Durabilidad (Anexo IV)",
+    "sm3": "3. Huella de Carbono y Circularidad",
+    "sm4a": "4a. Diligencia Debida (Atestación Pública)",
+    "sm4b": "4b. Trazabilidad Refinerías Tier-2/3 (Secreto Comercial)",
+    "sm5": "5. Estado Dinámico BMS (SoH / Resistencia Actual)",
+    "sm6": "6. Reparabilidad y Segunda Vida (Art. 77.6)",
+    "sm7": "7. Composición Química Detallada"
+  },
+  "walletModal": {
+    "title": "Wallet Digital · Presentación Verificable (OIDC4VP)",
+    "subtitle": "Solicitud de verificación desde Nodo EDC IberiaVolt",
+    "introPrefix": "El pasaporte público no requiere registro. Si actúas como propietario o entidad acreditada de la cadena de valor, selecciona una",
+    "introHighlight": "Credencial Verificable (VC)",
+    "introSuffix": "de tu cartera para negociar acceso con el conector EDC:",
+    "trustedIssuer": "Emisor de confianza:",
+    "resultingPolicy": "Política EDC resultante:",
+    "cancel": "Cancelar",
+    "verifying": "Verificando firma DID...",
+    "presentBtn": "Presentar Credencial al EDC",
+    "credentials": {
+      "owner": {
+        "holderName": "Propietario · App e-Bike",
+        "roleLabel": "Titular del activo (Vinculación Bluetooth / Token)",
+        "issuer": "IberiaVolt Mobility S.L. (Activación en compra)",
+        "policyGranted": "ODRL:Lectura_Telemetria_BMS_Propietario"
+      },
+      "workshop": {
+        "holderName": "Taller E-Mobility Bilbao",
+        "roleLabel": "Servicio Técnico Autorizado (B2B)",
+        "issuer": "Registro Industrial / Red Oficial OEM",
+        "policyGranted": "ODRL:Acceso_Despiece_Reparacion_Y_Escritura_Log"
+      },
+      "recycler": {
+        "holderName": "ReciclaBat Norte S.A.",
+        "roleLabel": "Gestor Autorizado de Tratamiento y Reciclaje (B2B)",
+        "issuer": "Autoridad Ambiental · NIMA 480009182",
+        "policyGranted": "ODRL:Acceso_Composicion_Quimica_Confidencial"
+      },
+      "authority": {
+        "holderName": "Vigilancia de Mercado UE",
+        "roleLabel": "Autoridad Competente · Sello Cualificado eIDAS",
+        "issuer": "Nodo Nacional eIDAS / Comisión Europea",
+        "policyGranted": "ODRL:Auditoria_Regulatoria_Completa_Art77"
+      },
+      "oem": {
+        "holderName": "IberiaVolt Mobility S.L. (OEM Master)",
+        "roleLabel": "Fabricante OEM (Acceso Total · Auditoría Interna)",
+        "issuer": "IberiaVolt Mobility S.L. (Identidad Corporativa)",
+        "policyGranted": "ODRL:Full-Access-All-Submodels (BMS + Repair + Chemistry + B2G)"
+      }
+    }
   }
 }

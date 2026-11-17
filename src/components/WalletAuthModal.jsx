@@ -9,69 +9,64 @@ import {
   Scale,
   ArrowRight,
   CheckCircle2,
-  Factory
+  Factory,
 } from "lucide-react";
+import { useTranslation } from "../hooks/useTranslation";
 
-const WALLET_CREDENTIALS = [
+const CREDENTIAL_CONFIGS = [
   {
     id: "owner",
-    holderName: "Propietario · App e-Bike",
-    roleLabel: "Titular del activo (Vinculación Bluetooth / Token)",
     did: "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
-    issuer: "IberiaVolt Mobility S.L. (Activación en compra)",
-    policyGranted: "ODRL:Lectura_Telemetria_BMS_Propietario",
     icon: Smartphone,
     accent: "text-baidata-purple bg-baidata-lavenderSoft border-baidata-lavender",
   },
   {
     id: "workshop",
-    holderName: "Taller E-Mobility Bilbao",
-    roleLabel: "Servicio Técnico Autorizado (B2B)",
     did: "did:web:emobility-bilbao.es",
-    issuer: "Registro Industrial / Red Oficial OEM",
-    policyGranted: "ODRL:Acceso_Despiece_Reparacion_Y_Escritura_Log",
     icon: Wrench,
     accent: "text-amber-700 bg-amber-50 border-amber-200",
   },
   {
     id: "recycler",
-    holderName: "ReciclaBat Norte S.A.",
-    roleLabel: "Gestor Autorizado de Tratamiento y Reciclaje (B2B)",
     did: "did:web:reciclabat-norte.eu",
-    issuer: "Autoridad Ambiental · NIMA 480009182",
-    policyGranted: "ODRL:Acceso_Composicion_Quimica_Confidencial",
     icon: Recycle,
     accent: "text-emerald-700 bg-emerald-50 border-emerald-200",
   },
   {
     id: "authority",
-    holderName: "Vigilancia de Mercado UE",
-    roleLabel: "Autoridad Competente · Sello Cualificado eIDAS",
     did: "did:web:vigilancia-mercado.gob.es",
-    issuer: "Nodo Nacional eIDAS / Comisión Europea",
-    policyGranted: "ODRL:Auditoria_Regulatoria_Completa_Art77",
     icon: Scale,
     accent: "text-sky-700 bg-sky-50 border-sky-200",
   },
   {
     id: "oem",
-    roleLabel: "Fabricante OEM (Acceso Total · Auditoría Interna)",
-    holderName: "IberiaVolt Mobility S.L. (OEM Master)",
     did: "did:web:iberiavolt.es:oem-master",
-    policyGranted: "Política ODRL: Full-Access-All-Submodels (BMS + Repair + Chemistry + B2G)",
-    description: "Vista completa de fabricante con acceso simultáneo a todos los submodelos públicos y restringidos.",
     icon: Factory,
     accent: "text-sky-700 bg-sky-50 border-sky-200",
   },
 ];
 
-export default function WalletAuthModal({ isOpen, onClose, onAuthenticate }) {
+export default function WalletAuthModal({
+  isOpen,
+  onClose,
+  onAuthenticate,
+  lang = "es",
+}) {
   const [selectedId, setSelectedId] = useState("workshop");
   const [verifying, setVerifying] = useState(false);
+  const { t } = useTranslation(lang);
 
   if (!isOpen) return null;
 
-  const selectedCred = WALLET_CREDENTIALS.find((c) => c.id === selectedId);
+  const credentials = CREDENTIAL_CONFIGS.map((cfg) => ({
+    ...cfg,
+    holderName: t(`walletModal.credentials.${cfg.id}.holderName`),
+    roleLabel: t(`walletModal.credentials.${cfg.id}.roleLabel`),
+    issuer: t(`walletModal.credentials.${cfg.id}.issuer`),
+    policyGranted: t(`walletModal.credentials.${cfg.id}.policyGranted`),
+  }));
+
+  const selectedCred = credentials.find((c) => c.id === selectedId);
 
   const handlePresent = () => {
     setVerifying(true);
@@ -91,12 +86,8 @@ export default function WalletAuthModal({ isOpen, onClose, onAuthenticate }) {
               <KeyRound className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h3 className="text-sm font-bold tracking-tight">
-                Wallet Digital · Presentación Verificable (OIDC4VP)
-              </h3>
-              <p className="text-[11px] text-slate-400">
-                Solicitud de verificación desde Nodo EDC IberiaVolt
-              </p>
+              <h3 className="text-sm font-bold tracking-tight">{t("walletModal.title")}</h3>
+              <p className="text-[11px] text-slate-400">{t("walletModal.subtitle")}</p>
             </div>
           </div>
           <button
@@ -109,12 +100,13 @@ export default function WalletAuthModal({ isOpen, onClose, onAuthenticate }) {
 
         <div className="p-6 space-y-4">
           <p className="text-xs text-slate-600 leading-relaxed">
-            El pasaporte público no requiere registro. Si actúas como propietario o entidad acreditada de la cadena de valor, selecciona una{" "}
-            <strong className="text-slate-800">Credencial Verificable (VC)</strong> de tu cartera para negociar acceso con el conector EDC:
+            {t("walletModal.introPrefix")}{" "}
+            <strong className="text-slate-800">{t("walletModal.introHighlight")}</strong>{" "}
+            {t("walletModal.introSuffix")}
           </p>
 
           <div className="space-y-2.5">
-            {WALLET_CREDENTIALS.map((cred) => {
+            {credentials.map((cred) => {
               const Icon = cred.icon;
               const isSelected = cred.id === selectedId;
               return (
@@ -152,13 +144,15 @@ export default function WalletAuthModal({ isOpen, onClose, onAuthenticate }) {
 
           {selectedCred && (
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] space-y-1">
-              <div className="flex items-center justify-between text-slate-500">
-                <span>Emisor de confianza:</span>
-                <span className="font-medium text-slate-700">{selectedCred.issuer}</span>
+              <div className="flex items-center justify-between gap-2 text-slate-500">
+                <span className="shrink-0">{t("walletModal.trustedIssuer")}</span>
+                <span className="font-medium text-slate-700 text-right truncate">
+                  {selectedCred.issuer}
+                </span>
               </div>
-              <div className="flex items-center justify-between text-slate-500">
-                <span>Política EDC resultante:</span>
-                <span className="font-mono text-baidata-purple font-semibold">
+              <div className="flex items-center justify-between gap-2 text-slate-500">
+                <span className="shrink-0">{t("walletModal.resultingPolicy")}</span>
+                <span className="font-mono text-baidata-purple font-semibold text-right truncate">
                   {selectedCred.policyGranted}
                 </span>
               </div>
@@ -171,7 +165,7 @@ export default function WalletAuthModal({ isOpen, onClose, onAuthenticate }) {
               onClick={onClose}
               className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
             >
-              Cancelar
+              {t("walletModal.cancel")}
             </button>
             <button
               type="button"
@@ -181,7 +175,7 @@ export default function WalletAuthModal({ isOpen, onClose, onAuthenticate }) {
             >
               <ShieldCheck className="w-4 h-4" />
               <span>
-                {verifying ? "Verificando firma DID..." : "Presentar Credencial al EDC"}
+                {verifying ? t("walletModal.verifying") : t("walletModal.presentBtn")}
               </span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>

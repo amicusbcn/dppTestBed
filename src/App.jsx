@@ -1024,6 +1024,7 @@ export default function App() {
         isOpen={isWalletOpen}
         onClose={() => setIsWalletOpen(false)}
         onAuthenticate={(cred) => setActiveCredential(cred)}
+        lang={lang}
       />
 
       <EdcTraceModal
@@ -1031,6 +1032,7 @@ export default function App() {
         onClose={() => setIsTraceOpen(false)}
         dppData={dppData}
         activeCredential={activeCredential}
+        lang={lang}
       />
     </div>
   );

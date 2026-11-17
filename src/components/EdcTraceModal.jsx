@@ -1,7 +1,16 @@
 import React from "react";
 import { X, Server, ShieldCheck, Lock } from "lucide-react";
+import { useTranslation } from "../hooks/useTranslation";
 
-export default function EdcTraceModal({ isOpen, onClose, dppData, activeCredential }) {
+export default function EdcTraceModal({
+  isOpen,
+  onClose,
+  dppData,
+  activeCredential,
+  lang = "es",
+}) {
+  const { t } = useTranslation(lang);
+
   if (!isOpen) return null;
 
   const role = activeCredential?.id || "public";
@@ -9,59 +18,59 @@ export default function EdcTraceModal({ isOpen, onClose, dppData, activeCredenti
   const submodelAccess = [
     {
       key: "public_nameplate",
-      title: "1. Placa de Características y Seguridad",
+      title: t("edcModal.sm1"),
       id: dppData.submodels.public_nameplate.aas_submodel_id,
       node: dppData.submodels.public_nameplate.source_node,
       allowed: true,
     },
     {
       key: "performance_durability",
-      title: "2. Rendimiento y Durabilidad (Anexo IV)",
+      title: t("edcModal.sm2"),
       id: dppData.submodels.performance_durability.aas_submodel_id,
       node: dppData.submodels.performance_durability.source_node,
       allowed: true,
     },
     {
       key: "carbon_circularity",
-      title: "3. Huella de Carbono y Circularidad",
+      title: t("edcModal.sm3"),
       id: dppData.submodels.carbon_circularity.aas_submodel_id,
       node: dppData.submodels.carbon_circularity.source_node,
       allowed: true,
     },
     {
       key: "due_diligence_public",
-      title: "4a. Diligencia Debida (Atestación Pública)",
+      title: t("edcModal.sm4a"),
       id: dppData.submodels.supply_chain_due_diligence.aas_submodel_id,
       node: dppData.submodels.supply_chain_due_diligence.source_node,
       allowed: true,
     },
     {
       key: "due_diligence_tier3",
-      title: "4b. Trazabilidad Refinerías Tier-2/3 (Secreto Comercial)",
+      title: t("edcModal.sm4b"),
       id: `${dppData.submodels.supply_chain_due_diligence.aas_submodel_id}:tier3`,
       node: dppData.submodels.supply_chain_due_diligence.source_node,
-      allowed: role === "authority",
+      allowed: ["authority", "oem"].includes(role),
     },
     {
       key: "dynamic_bms",
-      title: "5. Estado Dinámico BMS (SoH / Resistencia Actual)",
+      title: t("edcModal.sm5"),
       id: dppData.submodels.dynamic_bms.aas_submodel_id,
       node: dppData.submodels.dynamic_bms.source_node,
-      allowed: ["owner", "workshop", "authority"].includes(role),
+      allowed: ["owner", "workshop", "authority", "oem"].includes(role),
     },
     {
       key: "workshop_repair",
-      title: "6. Reparabilidad y Segunda Vida (Art. 77.6)",
+      title: t("edcModal.sm6"),
       id: dppData.submodels.workshop_repair.aas_submodel_id,
       node: dppData.submodels.workshop_repair.source_node,
-      allowed: ["workshop", "authority"].includes(role),
+      allowed: ["workshop", "authority", "oem"].includes(role),
     },
     {
       key: "recycler_chemistry",
-      title: "7. Composición Química Detallada",
+      title: t("edcModal.sm7"),
       id: dppData.submodels.recycler_chemistry.aas_submodel_id,
       node: dppData.submodels.recycler_chemistry.source_node,
-      allowed: ["recycler", "authority"].includes(role),
+      allowed: ["recycler", "authority", "oem"].includes(role),
     },
   ];
 
@@ -72,7 +81,7 @@ export default function EdcTraceModal({ isOpen, onClose, dppData, activeCredenti
     ],
     assetAdministrationShell: {
       idShort: `DPP_${dppData.battery_id}`,
-      globalAssetId: dppData.gs1_digital_link,
+      globalAssetId: dppData.asset_uri || dppData.gs1_digital_link,
     },
     edcSession: {
       consumerDid: activeCredential ? activeCredential.did : "anonymous (B2C QR Scan)",
@@ -90,12 +99,8 @@ export default function EdcTraceModal({ isOpen, onClose, dppData, activeCredenti
           <div className="flex items-center gap-2.5">
             <Server className="w-5 h-5 text-baidata-idsaBlue" />
             <div>
-              <h3 className="text-sm font-bold text-white">
-                Arquitectura Federada · API AAS & Conectores EDC
-              </h3>
-              <p className="text-xs text-slate-400">
-                Negociación de políticas ODRL y resolución de submodelos IDTA-02006
-              </p>
+              <h3 className="text-sm font-bold text-white">{t("edcModal.title")}</h3>
+              <p className="text-xs text-slate-400">{t("edcModal.subtitle")}</p>
             </div>
           </div>
           <button
@@ -109,7 +114,7 @@ export default function EdcTraceModal({ isOpen, onClose, dppData, activeCredenti
         <div className="p-6 overflow-y-auto space-y-5 text-xs">
           <div className="space-y-2">
             <p className="font-semibold text-slate-300 uppercase tracking-wider text-[11px]">
-              Resolución de acceso por submodelo en la sesión actual
+              {t("edcModal.accessSectionTitle")}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {submodelAccess.map((item) => (
@@ -125,11 +130,11 @@ export default function EdcTraceModal({ isOpen, onClose, dppData, activeCredenti
                     <span className="text-slate-100 truncate">{item.title}</span>
                     {item.allowed ? (
                       <span className="inline-flex items-center gap-1 text-emerald-400 shrink-0">
-                        <ShieldCheck className="w-3.5 h-3.5" /> Autorizado
+                        <ShieldCheck className="w-3.5 h-3.5" /> {t("edcModal.authorized")}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-slate-400 shrink-0">
-                        <Lock className="w-3.5 h-3.5" /> Denegado
+                        <Lock className="w-3.5 h-3.5" /> {t("edcModal.denied")}
                       </span>
                     )}
                   </div>
@@ -141,7 +146,7 @@ export default function EdcTraceModal({ isOpen, onClose, dppData, activeCredenti
 
           <div className="space-y-2">
             <p className="font-semibold text-slate-300 uppercase tracking-wider text-[11px]">
-              Respuesta JSON-LD del Catálogo Federado (M2M)
+              {t("edcModal.catalogTitle")}
             </p>
             <pre className="p-4 rounded-xl bg-black/60 border border-slate-800 font-mono text-[11px] text-emerald-300 overflow-x-auto leading-relaxed">
               {JSON.stringify(payloadPreview, null, 2)}
