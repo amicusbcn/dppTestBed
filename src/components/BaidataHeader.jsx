@@ -1,5 +1,6 @@
 import React from "react";
 import { Wallet, ShieldCheck, LogOut } from "lucide-react";
+import HeaderActionsMenu from "./HeaderActionsMenu";
 
 export default function BaidataHeader({ activeCredential, onOpenWallet, onLogout }) {
   return (
@@ -17,8 +18,14 @@ export default function BaidataHeader({ activeCredential, onOpenWallet, onLogout
           </span>
         </div>
 
-        <HeaderActionsMenu activeRole="{activeCredential?.id}" batteryId="{batteryId}" lang="{lang}" onChangeLang="{onChangeLang}" onOpenAuthModal="{onOpenWallet}"/>
-      </div>
+        <HeaderActionsMenu
+          lang={lang}
+          onChangeLang={onChangeLang}
+          batteryId={batteryId}
+          activeCredential={activeCredential}
+          onOpenAuthModal={onOpenWallet}
+          onLogout={onLogout}
+        />      </div>
     </header>
   );
 }
