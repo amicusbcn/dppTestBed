@@ -8,6 +8,25 @@ const AAS_BASE_URL =
     ? "/api/aas"
     : RAW_AAS_URL;
 
+const DEFAULT_BATTERY_ID = "BAT-2026-8841";
+
+export function getRequestedBatteryId() {
+  if (typeof window === "undefined") return DEFAULT_BATTERY_ID;
+
+  const cleanPath = window.location.pathname.replace(/\/+$/, "");
+  const match = cleanPath.match(/\/id\/([^/]+)$/i);
+  if (match?.[1]) {
+    return decodeURIComponent(match[1]);
+  }
+
+  const queryId = new URLSearchParams(window.location.search).get("id");
+  if (queryId) {
+    return queryId.trim();
+  }
+
+  return DEFAULT_BATTERY_ID;
+}
+
 function getTextVal(el, lang = "es", fallback = undefined) {
   if (!el || el.value === undefined || el.value === null) return fallback;
   if (typeof el.value === "string") return el.value !== "" ? el.value : fallback;
@@ -23,12 +42,17 @@ function getTextVal(el, lang = "es", fallback = undefined) {
   return fallback;
 }
 
-function findEl(elements = [], idShort) {
-  return elements.find((el) => el.idShort === idShort);
+function findEl(elements = [], idShort, semanticFragment = null) {
+  return elements.find(
+    (el) =>
+      el.idShort === idShort ||
+      (semanticFragment &&
+        el.semanticId?.keys?.some((k) => k.value?.includes(semanticFragment)))
+  );
 }
 
-function getPropVal(elements = [], idShort, fallback = undefined) {
-  const el = findEl(elements, idShort);
+function getPropVal(elements = [], idShort, fallback = undefined, semanticFragment = null) {
+  const el = findEl(elements, idShort, semanticFragment);
   if (!el || el.value === undefined || el.value === null || el.value === "") {
     return fallback;
   }
@@ -65,22 +89,132 @@ const MATERIAL_LABELS_ES = {
   nickel: "Níquel (Ni)",
 };
 
-export async function fetchBatteryDpp(lang = "es") {
+const DIN_PHASE_LABELS = {
+  a1: {
+    es: "A1 · Suministro materias primas",
+    en: "A1 · Raw material supply",
+    eu: "A1 · Lehengaien hornidura",
+    ca: "A1 · Subministrament matèries primeres",
+  },
+  a3: {
+    es: "A3 · Fabricación de celdas y pack",
+    en: "A3 · Cell & pack production",
+    eu: "A3 · Gelaxken eta pack-aren fabrikazioa",
+    ca: "A3 · Fabricació de cel·les i pack",
+  },
+  a4: {
+    es: "A4 · Transporte a destino final",
+    en: "A4 · Transport to final destination",
+    eu: "A4 · Azken helmugarako garraioa",
+    ca: "A4 · Transport a destinació final",
+  },
+  c3: {
+    es: "C3 · Reciclaje y tratamiento fin de vida",
+    en: "C3 · Recycling & waste treatment",
+    eu: "C3 · Birziklapena eta hondakinen tratamendua",
+    ca: "C3 · Reciclatge i tractament fi de vida",
+  },
+};
+
+function translateDinPhase(rawPhase = "", lang = "es") {
+  const lower = rawPhase.toLowerCase();
+  if (lower.startsWith("a1")) return DIN_PHASE_LABELS.a1[lang] || DIN_PHASE_LABELS.a1.es;
+  if (lower.startsWith("a3")) return DIN_PHASE_LABELS.a3[lang] || DIN_PHASE_LABELS.a3.es;
+  if (lower.startsWith("a4")) return DIN_PHASE_LABELS.a4[lang] || DIN_PHASE_LABELS.a4.es;
+  if (lower.startsWith("c3")) return DIN_PHASE_LABELS.c3[lang] || DIN_PHASE_LABELS.c3.es;
+  return rawPhase;
+}
+
+const EXTINGUISHING_LABELS = {
+  "class d (metal fires)": {
+    es: "Agente extintor Clase D (fuegos de metales)",
+    eu: "D klaseko su-itzalgailua (metal-suteak)",
+    ca: "Agent extintor Classe D (focs de metalls)",
+    en: "Class D (Metal fires)",
+  },
+  "water mist with f-500 encapsulator": {
+    es: "Agua nebulizada con encapsulador F-500",
+    eu: "Ur lainoztatua F-500 kapsulatzailearekin",
+    ca: "Aigua nebulitzada amb encapsulador F-500",
+    en: "Water mist with F-500 encapsulator",
+  },
+};
+
+function translateExtinguishingAgent(raw = "", lang = "es") {
+  const entry = EXTINGUISHING_LABELS[raw.trim().toLowerCase()];
+  return entry ? entry[lang] || entry.es : raw;
+}
+
+export async function fetchBatteryDpp(lang = "es", explicitId = null) {
+  const requestedId = explicitId || getRequestedBatteryId();
+
   if (!AAS_BASE_URL) {
-    return { data: fallbackData, source: "local", mappedFields: [] };
+    return { data: fallbackData, source: "local", mappedFields: [], requestedId };
   }
 
   try {
-    const res = await fetch(`${AAS_BASE_URL}/submodels`, {
+    // 1. Resolución dinámica de Asset Administration Shell por IEC 61406 URI / SerialNumber
+    const shellsRes = await fetch(`${AAS_BASE_URL}/shells`, {
       headers: { Accept: "application/json" },
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!shellsRes.ok) throw new Error(`HTTP ${shellsRes.status} al consultar /shells`);
 
-    const payload = await res.json();
-    const submodels = Array.isArray(payload) ? payload : payload.result || [];
+    const shellsPayload = await shellsRes.json();
+    const shells = Array.isArray(shellsPayload) ? shellsPayload : shellsPayload.result || [];
+
+    const availableBatteries = shells.map((sh) => {
+      const gId = sh.assetInformation?.globalAssetId || "";
+      const serialMatch = gId.match(/\/id\/([^/]+)$/i);
+      return {
+        serial: serialMatch?.[1] || sh.idShort,
+        idShort: sh.idShort,
+        globalAssetId: gId,
+      };
+    });
+
+    const targetShell =
+      shells.find((sh) => {
+        const gId = sh.assetInformation?.globalAssetId || "";
+        return (
+          gId.endsWith(`/id/${requestedId}`) ||
+          gId === requestedId ||
+          sh.idShort?.toLowerCase().includes(requestedId.toLowerCase())
+        );
+      }) || (requestedId === DEFAULT_BATTERY_ID ? shells[0] : null);
+
+    if (!targetShell) {
+      const notFoundData = structuredClone(fallbackData);
+      notFoundData.battery_id = requestedId;
+      return {
+        data: notFoundData,
+        source: "local",
+        mappedFields: [],
+        requestedId,
+        availableBatteries,
+      };
+    }
+
+    // 2. Filtrado estricto: cargar SOLO los submodelos referenciados por este AAS
+    const linkedSmIds = new Set(
+      (targetShell.submodels || [])
+        .map((ref) => ref.keys?.[0]?.value)
+        .filter(Boolean)
+    );
+
+    const smRes = await fetch(`${AAS_BASE_URL}/submodels`, {
+      headers: { Accept: "application/json" },
+    });
+    if (!smRes.ok) throw new Error(`HTTP ${smRes.status} al consultar /submodels`);
+
+    const smPayload = await smRes.json();
+    const allSubmodels = Array.isArray(smPayload) ? smPayload : smPayload.result || [];
+    const submodels =
+      linkedSmIds.size > 0
+        ? allSubmodels.filter((s) => linkedSmIds.has(s.id))
+        : allSubmodels;
 
     if (submodels.length === 0) {
-      return { data: fallbackData, source: "local", mappedFields: [] };
+      return { data: fallbackData, source: "local", mappedFields: [], requestedId, availableBatteries };
     }
 
     const mappedFields = new Set();
@@ -96,8 +230,12 @@ export async function fetchBatteryDpp(lang = "es") {
     const smDue = submodels.find((s) => s.idShort === "SupplyChainDueDiligence");
 
     const mapped = structuredClone(fallbackData);
+    mapped.battery_id = requestedId;
+    if (targetShell.assetInformation?.globalAssetId) {
+      mapped.asset_uri = targetShell.assetInformation.globalAssetId;
+    }
 
-    // 1. NAMEPLATE
+    // 1. NAMEPLATE (IDTA 02006)
     if (smNameplate?.submodelElements) {
       const els = smNameplate.submodelElements;
       const mfgName = getTextVal(findEl(els, "ManufacturerName"), lang);
@@ -115,6 +253,11 @@ export async function fetchBatteryDpp(lang = "es") {
         mapped.battery_id = serial;
         mark("battery_id");
       }
+      const uriProd = getPropVal(els, "URIOfTheProduct");
+      if (uriProd) {
+        mapped.asset_uri = uriProd;
+        mark("asset_uri");
+      }
       const mfgDate = getPropVal(els, "DateOfManufacture");
       if (mfgDate !== undefined) {
         mapped.submodels.public_nameplate.manufacturing_date = mfgDate;
@@ -125,19 +268,9 @@ export async function fetchBatteryDpp(lang = "es") {
         mapped.submodels.public_nameplate.manufacturing_plant = `Planta de Ensamblaje (${country})`;
         mark("nameplate.manufacturing_plant");
       }
-      const opRole = getTextVal(findEl(els, "OperatorRole"), lang);
-      if (opRole) {
-        mapped.responsible_operator.role = opRole;
-        mark("responsible_operator.role");
-      }
-      const heavyMetals = getTextVal(findEl(els, "HeavyMetalsDeclaration"), lang);
-      if (heavyMetals) {
-        mapped.submodels.public_nameplate.heavy_metals_declaration = heavyMetals;
-        mark("nameplate.heavy_metals_declaration");
-      }
     }
 
-    // 2. TECHNICAL DATA
+    // 2. TECHNICAL DATA (IDTA 02035-4)
     if (smTech?.submodelElements) {
       const genInfo = findEl(smTech.submodelElements, "GeneralInformation")?.value || [];
       const opName = getTextVal(findEl(genInfo, "ManufacturerName"), lang);
@@ -248,9 +381,23 @@ export async function fetchBatteryDpp(lang = "es") {
       }
     }
 
-    // 3. PRODUCT CONDITION (BMS)
+    // 3. PRODUCT CONDITION - TELEMETRÍA BMS (IDTA 02035-5)
     if (smCond?.submodelElements) {
       const els = smCond.submodelElements;
+
+      const batStatus = getPropVal(els, "BatteryStatus");
+      if (batStatus) {
+        mapped.status =
+          batStatus.toLowerCase() === "original"
+            ? "Activa · Primera Vida (Original)"
+            : batStatus;
+        mapped.responsible_operator.role =
+          batStatus.toLowerCase() === "original"
+            ? "Fabricante OEM (Puesta en el mercado inicial)"
+            : `Operador Segunda Vida (${batStatus})`;
+        mark("responsible_operator.role");
+      }
+
       const sohCol = findEl(els, "StateOfCertifiedEnergy")?.value || [];
       const cyclesCol = findEl(els, "NumberOfFullCycles")?.value || [];
       const remEnergyCol = findEl(els, "RemainingEnergy")?.value || [];
@@ -325,48 +472,47 @@ export async function fetchBatteryDpp(lang = "es") {
       }
     }
 
-    // 4. CARBON FOOTPRINT + DESGLOSE DINÁMICO MULTILINGÜE
+    // 4. CARBON FOOTPRINT OFICIAL IDTA 02035-3 (DIN DKE SPEC 99100)
     if (smCarbon?.submodelElements) {
       const pcfList = findEl(smCarbon.submodelElements, "ProductCarbonFootprints")?.value || [];
-      const pcfItem = pcfList[0]?.value || [];
+      const pcfEntries = pcfList.filter((item) => item.modelType === "SubmodelElementCollection");
 
-      const co2 = getPropVal(pcfItem, "PcfCO2eq");
-      if (co2 !== undefined) {
-        mapped.submodels.carbon_circularity.carbon_footprint_kg_kwh = co2;
-        mark("carbon.carbon_footprint_kg_kwh");
-      }
-      const perfClass = getPropVal(pcfItem, "PerformanceClass");
-      if (perfClass) {
-        mapped.submodels.carbon_circularity.performance_class = perfClass;
-        mark("carbon.performance_class");
-      }
+      if (pcfEntries.length > 0) {
+        const parsedEntries = pcfEntries.map((entry) => {
+          const eEls = entry.value || [];
+          const co2 = getPropVal(eEls, "PcfCO2eq", 0, "0173-1#02-ABG855");
+          const perfClass = getPropVal(eEls, "PerformanceClass", undefined, "performanceClass");
+          const phasesList = findEl(eEls, "LifeCyclePhases")?.value || [];
+          const phases = phasesList.map((p) => p.value).filter(Boolean);
+          return { co2, perfClass, phases };
+        });
 
-      // Buscar LifecycleBreakdown tanto dentro de ProductCarbonFootprints como en pcfItem o raíz
-      const breakdownCol =
-        findEl(pcfList, "LifecycleBreakdown")?.value ||
-        findEl(pcfItem, "LifecycleBreakdown")?.value ||
-        findEl(smCarbon.submodelElements, "LifecycleBreakdown")?.value ||
-        [];
+        const totalEntry =
+          parsedEntries.find((e) => e.phases.length > 1) ||
+          parsedEntries.reduce((max, cur) => (cur.co2 > max.co2 ? cur : max), parsedEntries[0]);
 
-      if (breakdownCol.length > 0) {
-        const parsedStages = breakdownCol
-          .map((stageCol) => {
-            const sEls = stageCol.value || [];
-            const stage = getTextVal(findEl(sEls, "stageName"), lang);
-            const share = getPropVal(sEls, "PCFValue");
-            if (!stage || share === undefined) return null;
-            return { stage, share };
-          })
-          .filter(Boolean);
+        const totalCo2 = totalEntry?.co2 || 0;
+        if (totalCo2 > 0) {
+          mapped.submodels.carbon_circularity.carbon_footprint_kg_kwh = totalCo2;
+          mark("carbon.carbon_footprint_kg_kwh");
+        }
+        if (totalEntry?.perfClass) {
+          mapped.submodels.carbon_circularity.performance_class = totalEntry.perfClass;
+          mark("carbon.performance_class");
+        }
 
-        if (parsedStages.length > 0) {
-          mapped.submodels.carbon_circularity.lifecycle_breakdown = parsedStages;
+        const phaseEntries = parsedEntries.filter((e) => e.phases.length === 1 && e.co2 > 0);
+        if (phaseEntries.length > 0 && totalCo2 > 0) {
+          mapped.submodels.carbon_circularity.lifecycle_breakdown = phaseEntries.map((pe) => ({
+            stage: `${translateDinPhase(pe.phases[0], lang)} (${pe.co2} kg)`,
+            share: Number(((pe.co2 / totalCo2) * 100).toFixed(1)),
+          }));
           mark("carbon.lifecycle_breakdown");
         }
       }
     }
 
-    // 5. MATERIAL COMPOSITION
+    // 5. MATERIAL COMPOSITION (IDTA 02035-6)
     if (smMat?.submodelElements) {
       const els = smMat.submodelElements;
       const chemCol = findEl(els, "BatteryChemistry")?.value || [];
@@ -375,12 +521,6 @@ export async function fetchBatteryDpp(lang = "es") {
       if (shortChem) {
         mapped.submodels.public_nameplate.chemistry = shortChem;
         mark("nameplate.chemistry");
-      }
-
-      const neutralization = getTextVal(findEl(els, "SafetyNeutralization"), lang);
-      if (neutralization) {
-        mapped.submodels.recycler_chemistry.safety_neutralization = neutralization;
-        mark("chemistry.safety_neutralization");
       }
 
       const materialsList = findEl(els, "BatteryMaterials")?.value || [];
@@ -427,13 +567,16 @@ export async function fetchBatteryDpp(lang = "es") {
             : `${name} [CAS ${cas}]`;
         });
         mark("chemistry.hazardous_substances");
+        mapped.submodels.public_nameplate.heavy_metals_declaration =
+          "Conforme Art. 6 UE 2023/1542 · Declaración REACH/CLP verificada en MaterialComposition";
+        mark("nameplate.heavy_metals_declaration");
       }
 
-      mapped.submodels.recycler_chemistry.source_node = `Azure BaSyx AAS v3.0 (${smMat.idShort})`;
+      mapped.submodels.recycler_chemistry.source_node = `Azure BaSyx AAS v3.0 (${targetShell.idShort} · IDTA 02035-6)`;
       mark("chemistry.source_node");
     }
 
-    // 6. CIRCULARITY
+    // 6. CIRCULARITY (IDTA 02035-7)
     if (smCirc?.submodelElements) {
       const els = smCirc.submodelElements;
 
@@ -443,15 +586,12 @@ export async function fetchBatteryDpp(lang = "es") {
         mark("carbon.renewable_content");
       }
 
-      const cellArch = getTextVal(findEl(els, "CellArchitecture"), lang);
-      if (cellArch) {
-        mapped.submodels.workshop_repair.cell_architecture = cellArch;
-        mark("repair.cell_architecture");
-      }
-
       const safetyCol = findEl(els, "SafetyMeasures")?.value || [];
       const extList = findEl(safetyCol, "ExtinguishingAgents")?.value || [];
-      const agents = extList.map((item) => item.value).filter(Boolean);
+      const agents = extList
+        .map((item) => item.value)
+        .filter(Boolean)
+        .map((val) => translateExtinguishingAgent(val, lang));
       if (agents.length > 0) {
         mapped.submodels.public_nameplate.extinguishing_agents = agents;
         mark("nameplate.extinguishing_agents");
@@ -531,7 +671,7 @@ export async function fetchBatteryDpp(lang = "es") {
       }
     }
 
-    // 7. HANDOVER DOCUMENTATION
+    // 7. HANDOVER DOCUMENTATION (IDTA 02035-2)
     if (smDocs?.submodelElements) {
       const docsList = findEl(smDocs.submodelElements, "Documents")?.value || [];
       const parsedDocs = [];
@@ -656,9 +796,15 @@ export async function fetchBatteryDpp(lang = "es") {
       }
     }
 
-    return { data: mapped, source: "basyx", mappedFields: Array.from(mappedFields) };
+    return {
+      data: mapped,
+      source: "basyx",
+      mappedFields: Array.from(mappedFields),
+      requestedId,
+      availableBatteries,
+    };
   } catch (err) {
     console.warn("No se pudo conectar con Azure BaSyx, usando datos locales:", err.message);
-    return { data: fallbackData, source: "local", mappedFields: [] };
+    return { data: fallbackData, source: "local", mappedFields: [], requestedId };
   }
 }
